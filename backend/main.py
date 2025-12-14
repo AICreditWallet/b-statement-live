@@ -13,11 +13,14 @@ app = FastAPI(title="B Statement Check API")
 # In production, lock this down to your frontend domain(s)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=[
+        "https://b-statement-live.vercel.app"
+    ],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 
 class Verdict(str, Enum):
