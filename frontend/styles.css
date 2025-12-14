@@ -38,9 +38,9 @@ body{
   color:inherit;
 }
 .brandLogo{
-  width:40px;
+  width:43px;
   height:48px;
-  border-radius:12px;
+  border-radius:18px;
   object-fit:cover;
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
 }
