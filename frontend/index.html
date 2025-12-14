@@ -8,7 +8,11 @@
 </head>
 <body>
   <header class="topbar">
-    <div class="brand">B Statement Check</div>
+    <div class="brandWrap">
+      <div class="brand">B Statement Check</div>
+      <div class="brandSub">Document pre-check assistant</div>
+    </div>
+
     <nav class="nav">
       <a class="btn ghost" href="./login.html">Login</a>
       <a class="btn" href="./register.html">Register</a>
@@ -17,25 +21,49 @@
 
   <main class="wrap">
     <section class="hero card">
-      <h1>Upload a UK bank statement PDF and get a basic fraud verdict</h1>
-      <p class="sub">MVP demo. Not financial advice or a regulated tool yet.</p>
+      <h1>Check a bank statement for potential anomalies — in seconds</h1>
+      <p class="sub">
+        Upload a UK bank statement PDF to get a risk indicator and clear reasons.
+        Built for advisers and operations teams as a pre-check — not a decision engine.
+      </p>
+
+      <ul class="bullets">
+        <li>No “fraud verdicts” — only risk indicators based on basic checks</li>
+        <li>Explains what it flagged (metadata, layout, branding, extraction)</li>
+        <li>You stay in control — final decisions remain with your team</li>
+      </ul>
 
       <div class="uploader">
-        <label class="file">
-          <input id="pdfInput" type="file" accept="application/pdf" />
-          <span class="fileBtn">Choose File</span>
-          <span id="fileName" class="fileName">No file selected</span>
-        </label>
+        <div class="uploadBlock">
+          <div class="fieldLabel">Bank statement PDF</div>
 
-        <button id="analyzeBtn" class="btn primary" disabled>Analyze statement</button>
+          <label class="file">
+            <input id="pdfInput" type="file" accept="application/pdf" />
+            <span class="fileBtn">Choose file</span>
+            <span id="fileName" class="fileName">No file selected</span>
+          </label>
+
+          <div class="hint">
+            We recommend using the original statement PDF export (not screenshots).
+          </div>
+        </div>
+
+        <button id="analyzeBtn" class="btn primary" disabled>Run pre-check</button>
       </div>
 
       <div id="status" class="status" aria-live="polite"></div>
 
+      <div class="disclaimer">
+        <strong>Important:</strong> This tool provides a <strong>document risk indicator</strong> only.
+        It does <strong>not</strong> verify authenticity, does <strong>not</strong> detect fraud, and must
+        <strong>not</strong> be used as the sole basis for lending or compliance decisions.
+        Always perform your normal checks and request original documents where required.
+      </div>
+
       <div id="result" class="result card hidden">
         <div class="resultHeader">
           <div>
-            <div class="label">Verdict</div>
+            <div class="label">Risk indicator</div>
             <div id="verdictText" class="verdict">—</div>
           </div>
           <span id="badge" class="badge">—</span>
@@ -52,13 +80,12 @@
           </div>
         </div>
 
-        <div class="label" style="margin-top:14px;">Reasons</div>
+        <div class="label" style="margin-top:14px;">What we flagged</div>
         <ul id="reasons" class="reasons"></ul>
       </div>
     </section>
   </main>
 
-  <script>
-  window.API_BASE = localStorage.getItem("API_BASE") || "https://b-statement-live-production.up.railway.app";
-</script>
-<script src="./app.js" defer></script>
+  <script src="./app.js"></script>
+</body>
+</html>
