@@ -1,3 +1,4 @@
+const API_BASE = "https://b-statement-live-production.up.railway.app";
 const input = document.getElementById("pdfInput");
 const fileName = document.getElementById("fileName");
 const btn = document.getElementById("analyzeBtn");
@@ -8,7 +9,6 @@ const badge = document.getElementById("badge");
 const bankText = document.getElementById("bankText");
 const confText = document.getElementById("confText");
 const reasonsEl = document.getElementById("reasons");
-const API_BASE = "https://b-statement-live-production.up.railway.app";
 
 
 function setStatus(msg, kind="") {
