@@ -59,10 +59,6 @@
   </main>
 
   <script>
-    // IMPORTANT: set this to your deployed backend URL on Vercel/Netlify
-    // Example: https://your-render-service.onrender.com
-    const API_BASE = localStorage.getItem("API_BASE") || "http://127.0.0.1:8000";
-  </script>
-  <script src="./app.js"></script>
-</body>
-</html>
+  window.API_BASE = localStorage.getItem("API_BASE") || "https://b-statement-live-production.up.railway.app";
+</script>
+<script src="./app.js" defer></script>

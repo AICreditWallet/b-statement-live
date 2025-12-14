@@ -1,4 +1,4 @@
-const API_BASE = "https://b-statement-live-production.up.railway.app";
+const API_BASE = window.API_BASE;
 const input = document.getElementById("pdfInput");
 const fileName = document.getElementById("fileName");
 const btn = document.getElementById("analyzeBtn");
