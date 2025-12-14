@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>B Statement Check</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">B Statement Check</div>
+    <nav class="nav">
+      <a class="btn ghost" href="./login.html">Login</a>
+      <a class="btn" href="./register.html">Register</a>
+    </nav>
+  </header>
+
+  <main class="wrap">
+    <section class="hero card">
+      <h1>Upload a UK bank statement PDF and get a basic fraud verdict</h1>
+      <p class="sub">MVP demo. Not financial advice or a regulated tool yet.</p>
+
+      <div class="uploader">
+        <label class="file">
+          <input id="pdfInput" type="file" accept="application/pdf" />
+          <span class="fileBtn">Choose File</span>
+          <span id="fileName" class="fileName">No file selected</span>
+        </label>
+
+        <button id="analyzeBtn" class="btn primary" disabled>Analyze statement</button>
+      </div>
+
+      <div id="status" class="status" aria-live="polite"></div>
+
+      <div id="result" class="result card hidden">
+        <div class="resultHeader">
+          <div>
+            <div class="label">Verdict</div>
+            <div id="verdictText" class="verdict">—</div>
+          </div>
+          <span id="badge" class="badge">—</span>
+        </div>
+
+        <div class="grid">
+          <div>
+            <div class="label">Detected bank</div>
+            <div id="bankText" class="value">—</div>
+          </div>
+          <div>
+            <div class="label">Confidence</div>
+            <div id="confText" class="value">—</div>
+          </div>
+        </div>
+
+        <div class="label" style="margin-top:14px;">Reasons</div>
+        <ul id="reasons" class="reasons"></ul>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // IMPORTANT: set this to your deployed backend URL on Vercel/Netlify
+    // Example: https://your-render-service.onrender.com
+    const API_BASE = localStorage.getItem("API_BASE") || "http://127.0.0.1:8000";
+  </script>
+  <script src="./app.js"></script>
+</body>
+</html>
