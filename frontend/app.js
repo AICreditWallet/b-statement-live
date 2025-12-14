@@ -1,4 +1,10 @@
+// Read backend URL injected by index.html
 const API_BASE = window.API_BASE;
+
+if (!API_BASE) {
+  console.error("API_BASE is not defined. Check index.html.");
+}
+
 const input = document.getElementById("pdfInput");
 const fileName = document.getElementById("fileName");
 const btn = document.getElementById("analyzeBtn");
@@ -10,8 +16,7 @@ const bankText = document.getElementById("bankText");
 const confText = document.getElementById("confText");
 const reasonsEl = document.getElementById("reasons");
 
-
-function setStatus(msg, kind="") {
+function setStatus(msg, kind = "") {
   statusEl.textContent = msg;
   statusEl.className = "status " + kind;
 }
@@ -49,16 +54,19 @@ btn.addEventListener("click", async () => {
   form.append("file", f);
 
   try {
-    const res = await fetch(`${API_BASE}/analyze`, { method: "POST", body: form });
+    const res = await fetch(`${API_BASE}/analyze`, {
+      method: "POST",
+      body: form
+    });
+
     const data = await res.json();
     if (!res.ok) throw new Error(data?.detail || "Request failed");
 
-    // Render
     result.classList.remove("hidden");
     verdictText.textContent = data.verdict.replaceAll("_", " ");
     setBadge(data.verdict);
 
-    bankText.textContent = data.bank || "unknown";
+    bankText.textContent = data.bank || "Unknown";
     confText.textContent = `${Math.round((data.confidence || 0) * 100)}%`;
 
     reasonsEl.innerHTML = "";
