@@ -266,3 +266,165 @@ body{
   font-weight: 650;
 }
 .reasons li{ margin: 8px 0; }
+.page{ padding-bottom: 60px; }
+
+.section{
+  max-width: 1080px;
+  margin: 34px auto;
+  padding: 0 22px;
+}
+
+.sectionTitle{
+  font-weight: 700;
+  font-size: 16px;
+  color: #1a1f2b;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.sectionNote{
+  text-align: center;
+  margin-top: 10px;
+  opacity: .7;
+  font-size: 13px;
+}
+
+.logosRow{
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.logoChip{
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,.06);
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-weight: 600;
+  font-size: 13px;
+  color: rgba(0,0,0,.65);
+  box-shadow: 0 10px 30px rgba(0,0,0,.04);
+}
+
+.h2{
+  font-size: 34px;
+  letter-spacing: -0.02em;
+  margin: 0 0 8px;
+  text-align: center;
+}
+
+.sub2{
+  text-align: center;
+  margin: 0 auto 18px;
+  max-width: 760px;
+  font-size: 16px;
+  opacity: .75;
+}
+
+.featureGrid{
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.featureCard{
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 22px;
+  border: 1px solid rgba(0,0,0,.06);
+  box-shadow: 0 20px 60px rgba(0,0,0,.05);
+}
+
+.featureCard h3{
+  margin: 10px 0 10px;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+}
+
+.featureCard p{
+  margin: 0;
+  opacity: .78;
+  line-height: 1.6;
+}
+
+.pill{
+  display: inline-block;
+  background: rgba(39, 87, 255, .10);
+  color: rgba(39, 87, 255, .95);
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 12px;
+}
+
+.miniList{ margin-top: 16px; display: grid; gap: 10px; }
+.miniItem{ display: flex; gap: 10px; align-items: center; opacity: .85; }
+.miniTag{
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+.miniTag.ok{ background: rgba(25, 135, 84, .12); color: rgba(25, 135, 84, .95); }
+.miniTag.warn{ background: rgba(255, 193, 7, .16); color: rgba(160, 110, 0, .95); }
+
+.mockReport{
+  margin-top: 16px;
+  background: rgba(0,0,0,.035);
+  border-radius: 18px;
+  padding: 16px;
+}
+.mockTitle{ font-weight: 800; margin-bottom: 10px; opacity: .75; }
+.mockLine{ height: 10px; border-radius: 999px; background: rgba(0,0,0,.08); margin: 10px 0; }
+.mockLine.short{ width: 62%; }
+
+.howGrid{
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.howCard{
+  background: #ffffff;
+  border-radius: 22px;
+  padding: 22px;
+  border: 1px solid rgba(0,0,0,.06);
+  box-shadow: 0 18px 50px rgba(0,0,0,.045);
+  text-align: left;
+}
+.howDot{
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: rgba(39, 87, 255, .15);
+  margin-bottom: 12px;
+}
+.howCard h3{ margin: 0 0 8px; font-size: 18px; }
+.howCard p{ margin: 0; opacity: .78; line-height: 1.6; }
+
+.footer{
+  margin-top: 44px;
+  padding: 28px 22px;
+}
+.footerInner{
+  max-width: 1080px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  opacity: .7;
+  font-size: 13px;
+  border-top: 1px solid rgba(0,0,0,.06);
+  padding-top: 18px;
+}
+.footerNote{ text-align: right; }
+
+@media (max-width: 900px){
+  .featureGrid{ grid-template-columns: 1fr; }
+  .howGrid{ grid-template-columns: 1fr; }
+  .footerInner{ flex-direction: column; text-align: center; }
+  .footerNote{ text-align: center; }
+}
