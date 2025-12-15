@@ -24,16 +24,15 @@
   </header>
 
   <main class="page">
-    <!-- HERO -->
+    <!-- HERO (blue only here) -->
     <section class="hero">
       <div class="heroInner">
         <h1>Pre-check bank statements in seconds</h1>
         <p class="heroSub">Upload a PDF. Get a risk indicator and clear flags to review.</p>
 
-        <!-- ONE upload control only -->
         <div class="uploadCard">
           <div class="uploadRow">
-            <label class="filePill" aria-label="Choose a PDF bank statement">
+            <label class="filePill">
               <input id="pdfInput" type="file" accept="application/pdf" />
               <span class="fileBtn">Choose PDF</span>
               <span id="fileName" class="fileName">No file selected</span>
@@ -47,93 +46,51 @@
 
         <div class="disclaimerCard">
           <strong>Important:</strong> This tool provides a <strong>document risk indicator</strong> only.
-          It does <strong>not</strong> verify authenticity, does <strong>not</strong> detect fraud, and must
-          <strong>not</strong> be used as the sole basis for lending, onboarding, or compliance decisions.
+          It does <strong>not</strong> verify authenticity, does <strong>not</strong> detect fraud, and must <strong>not</strong>
+          be used as the sole basis for lending, onboarding, or compliance decisions.
         </div>
 
         <div id="status" class="status" aria-live="polite"></div>
 
-        <!-- Results (kept for your existing app.js) -->
-         <div id="result" class="result hidden">
-  <div class="resultTop">
-    <!-- Left: verdict -->
-    <div class="resultCard resultVerdict">
-      <div class="resultCardHead">
-        <div class="label">Pre-check outcome</div>
-        <span id="badge" class="badge">—</span>
-      </div>
-
-      <div class="verdictBig" id="verdictText">—</div>
-      <div class="resultMeta">
-        <span class="metaPill">Risk indicator (not a decision)</span>
-        <span class="metaPill">Explainable flags</span>
-      </div>
-    </div>
-
-    <!-- Middle: detected bank -->
-    <div class="resultCard">
-      <div class="resultCardHead">
-        <div class="label">Detected bank</div>
-      </div>
-      <div class="statBig" id="bankText">—</div>
-      <div class="statSub">Based on branding + document signals</div>
-    </div>
-
-    <!-- Right: confidence ring -->
-    <div class="resultCard">
-      <div class="resultCardHead">
-        <div class="label">Confidence</div>
-      </div>
-
-      <div class="confidenceRow">
-        <div class="ring" id="confRing" style="--p: 0;">
-          <div class="ringInner">
-            <div class="ringValue" id="confText">—</div>
-            <div class="ringLabel">signal strength</div>
+        <div id="result" class="result hidden">
+          <div class="resultHeader">
+            <div>
+              <div class="label">Verdict</div>
+              <div id="verdictText" class="verdict">—</div>
+            </div>
+            <span id="badge" class="badge">—</span>
           </div>
-        </div>
 
-        <div class="confRight">
-          <div class="confBar">
-            <div class="confBarFill" id="confBar" style="width:0%"></div>
+          <div class="grid">
+            <div>
+              <div class="label">Detected bank</div>
+              <div id="bankText" class="value">—</div>
+            </div>
+            <div>
+              <div class="label">Confidence</div>
+              <div id="confText" class="value">—</div>
+            </div>
           </div>
-          <div class="confHint">Higher confidence = clearer matching signals</div>
+
+          <div class="label" style="margin-top:14px;">Reasons</div>
+          <ul id="reasons" class="reasons"></ul>
         </div>
       </div>
-    </div>
-  </div>
+    </section>
 
-  <!-- Reasons -->
-  <div class="resultBottom">
-    <div class="resultCard">
-      <div class="resultCardHead">
-        <div class="label">Flags to review</div>
-      </div>
-
-      <ul id="reasons" class="reasonsModern"></ul>
-
-      <div class="miniDisclaimer">
-        <strong>Reminder:</strong> This is a document pre-check only. Always follow your normal controls and request originals where required.
-      </div>
-    </div>
-  </div>
-</div>
-
-
-    <!-- TRUSTED BY -->
+    <!-- Everything below is normal page background -->
     <section class="section">
       <div class="sectionTitle">Trusted by fintech and mortgage lenders</div>
-      <div class="logosRow" aria-label="Target teams">
+      <div class="logosRow">
         <div class="logoChip">Fintech Ops</div>
         <div class="logoChip">Mortgage Brokerages</div>
         <div class="logoChip">Credit Teams</div>
-        <div class="logoChip">Fraud &amp; Compliance</div>
+        <div class="logoChip">Fraud & Compliance</div>
         <div class="logoChip">Underwriting</div>
       </div>
       <div class="sectionNote">Add real client logos only when you have permission.</div>
     </section>
 
-    <!-- SUPERPOWERS -->
     <section class="section">
       <h2 class="h2">Give your team superpowers</h2>
       <p class="sub2">Automate tedious, manual review and enable your team to do what they do best.</p>
@@ -143,10 +100,8 @@
           <div class="pill">Automated pre-check</div>
           <h3>Faster document triage</h3>
           <p>
-            Quickly surface potential anomalies (metadata, layout, branding, extraction gaps)
-            so your team knows what to review first.
+            Surface potential anomalies (metadata, layout, branding, extraction gaps) so your team knows what to review first.
           </p>
-
           <div class="miniList">
             <div class="miniItem"><span class="miniTag ok">Low risk</span> Clear structure + consistent branding</div>
             <div class="miniItem"><span class="miniTag warn">Review</span> Missing tables / unusual formatting</div>
@@ -157,11 +112,10 @@
           <div class="pill">Explainable results</div>
           <h3>Clear flags, not black-box scores</h3>
           <p>
-            Every indicator includes “why” — so ops, advisers, and compliance can justify next steps
-            and request originals when needed.
+            Every indicator includes “why” — so ops, advisers, and compliance can justify next steps.
           </p>
 
-          <div class="mockReport" aria-label="Example report placeholder">
+          <div class="mockReport">
             <div class="mockTitle">Example output</div>
             <div class="mockLine"></div>
             <div class="mockLine short"></div>
@@ -172,32 +126,30 @@
       </div>
     </section>
 
-    <!-- HOW IT WORKS -->
     <section class="section">
       <h2 class="h2">How it works</h2>
 
       <div class="howGrid">
         <div class="howCard">
-          <div class="howDot" aria-hidden="true"></div>
+          <div class="howDot"></div>
           <h3>Upload</h3>
           <p>Upload a bank statement PDF (original export recommended).</p>
         </div>
 
         <div class="howCard">
-          <div class="howDot" aria-hidden="true"></div>
+          <div class="howDot"></div>
           <h3>Analyze</h3>
           <p>We run basic checks across metadata, layout, branding, and extraction quality.</p>
         </div>
 
         <div class="howCard">
-          <div class="howDot" aria-hidden="true"></div>
+          <div class="howDot"></div>
           <h3>Review</h3>
           <p>You get a risk indicator + reasons, so your team decides the next step.</p>
         </div>
       </div>
     </section>
 
-    <!-- FOOTER -->
     <footer class="footer">
       <div class="footerInner">
         <div>© <span id="year"></span> B Statement Check</div>
@@ -208,7 +160,6 @@
 
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
-    // Keep API base set by deployment (or hardcode Railway URL)
     window.API_BASE = window.API_BASE || "https://b-statement-live-production.up.railway.app";
   </script>
   <script src="./app.js"></script>

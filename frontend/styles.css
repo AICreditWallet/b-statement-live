@@ -22,6 +22,8 @@ body{
   background: var(--bg);
 }
 
+.page{ padding-bottom: 60px; }
+
 /* Top bar */
 .topbar{
   display:flex;
@@ -38,13 +40,14 @@ body{
   color:inherit;
 }
 .brandLogo{
-  width:56px;
-  height:56px;
+  width:52px;
+  height:52px;
   border-radius:16px;
   object-fit:contain;
   background:#fff;
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
-  padding:6px;
+  border: 1px solid rgba(0,0,0,.06);
+  padding: 6px;
 }
 .brandName{
   font-weight:800;
@@ -87,12 +90,9 @@ body{
   background: transparent;
 }
 
-/* Page */
-.page{ padding-bottom: 60px; }
-
 /* Hero */
 .hero{
-  padding: 22px 22px 70px;
+  padding: 22px 22px 40px;
 }
 .heroInner{
   max-width: 1080px;
@@ -141,7 +141,6 @@ body{
   flex-wrap: wrap;
 }
 
-/* This matches your HTML: <label class="filePill"> ... */
 .filePill{
   display:flex;
   align-items:center;
@@ -151,15 +150,14 @@ body{
   border:1px solid var(--line);
   background:#fff;
   min-width: min(560px, 100%);
+  position: relative;
 }
 
-/* Hide the real input so only our pill/button shows (prevents “tiny choose file”) */
 .filePill input{
   position:absolute;
+  inset: 0;
   opacity:0;
-  pointer-events:none;
-  width:1px;
-  height:1px;
+  cursor:pointer;
 }
 
 .fileBtn{
@@ -187,10 +185,9 @@ body{
   text-align:center;
   color: var(--muted);
   font-size: 13px;
-  font-weight: 600;
 }
 
-/* Disclaimer card (matches index.html: disclaimerCard) */
+/* Disclaimer + status + result */
 .disclaimerCard{
   margin: 18px auto 0;
   max-width: 860px;
@@ -203,7 +200,6 @@ body{
   line-height: 1.35;
 }
 
-/* Status */
 .status{
   margin-top: 10px;
   text-align:center;
@@ -213,7 +209,6 @@ body{
 .status.err{ color:#b42318; }
 .status.info{ color:#1d4ed8; }
 
-/* Result */
 .result{
   margin: 18px auto 0;
   max-width: 860px;
@@ -333,7 +328,6 @@ body{
   opacity: .75;
 }
 
-/* Feature cards */
 .featureGrid{
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -392,7 +386,6 @@ body{
 .mockLine{ height: 10px; border-radius: 999px; background: rgba(0,0,0,.08); margin: 10px 0; }
 .mockLine.short{ width: 62%; }
 
-/* How it works */
 .howGrid{
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -418,7 +411,6 @@ body{
 .howCard h3{ margin: 0 0 8px; font-size: 18px; }
 .howCard p{ margin: 0; opacity: .78; line-height: 1.6; }
 
-/* Footer */
 .footer{
   margin-top: 44px;
   padding: 28px 22px;
@@ -441,182 +433,4 @@ body{
   .howGrid{ grid-template-columns: 1fr; }
   .footerInner{ flex-direction: column; text-align: center; }
   .footerNote{ text-align: center; }
-}
-/* ===== Results dashboard (modern) ===== */
-.result {
-  margin: 18px auto 0;
-  max-width: 1080px;
-}
-
-.resultTop{
-  display:grid;
-  grid-template-columns: 1.35fr 1fr 1.15fr;
-  gap: 16px;
-  margin-top: 18px;
-}
-
-.resultBottom{
-  margin-top: 16px;
-}
-
-.resultCard{
-  background: rgba(255,255,255,0.96);
-  border: 1px solid rgba(255,255,255,0.55);
-  border-radius: 22px;
-  padding: 18px;
-  box-shadow: 0 18px 50px rgba(16, 24, 40, 0.10);
-}
-
-.resultCardHead{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap: 12px;
-  margin-bottom: 10px;
-}
-
-.resultVerdict{
-  background: rgba(255,255,255,0.92);
-}
-
-.verdictBig{
-  font-size: 34px;
-  font-weight: 950;
-  letter-spacing: -0.03em;
-  margin-top: 6px;
-}
-
-.resultMeta{
-  display:flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 12px;
-}
-
-.metaPill{
-  display:inline-flex;
-  align-items:center;
-  padding: 8px 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(0,0,0,.06);
-  background: rgba(39, 87, 255, .06);
-  color: rgba(11,18,32,.85);
-  font-weight: 700;
-  font-size: 12px;
-}
-
-.statBig{
-  font-size: 28px;
-  font-weight: 950;
-  letter-spacing: -0.02em;
-}
-
-.statSub{
-  margin-top: 8px;
-  color: rgba(11,18,32,.65);
-  font-weight: 650;
-  font-size: 13px;
-  line-height: 1.4;
-}
-
-/* Confidence ring */
-.confidenceRow{
-  display:flex;
-  gap: 14px;
-  align-items:center;
-}
-
-.ring{
-  width: 106px;
-  height: 106px;
-  border-radius: 999px;
-  background:
-    radial-gradient(circle at 50% 50%, rgba(255,255,255,0.96) 62%, transparent 63%),
-    conic-gradient(rgba(11,18,32,0.9) calc(var(--p) * 1turn), rgba(11,18,32,0.12) 0);
-  border: 1px solid rgba(0,0,0,.06);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  box-shadow: 0 12px 40px rgba(0,0,0,.06);
-}
-
-.ringInner{
-  text-align:center;
-  transform: translateY(1px);
-}
-
-.ringValue{
-  font-weight: 950;
-  letter-spacing: -0.02em;
-  font-size: 18px;
-}
-
-.ringLabel{
-  margin-top: 2px;
-  font-size: 11px;
-  color: rgba(11,18,32,.55);
-  font-weight: 700;
-}
-
-.confRight{
-  flex:1;
-  min-width: 160px;
-}
-
-.confBar{
-  height: 12px;
-  border-radius: 999px;
-  background: rgba(11,18,32,0.10);
-  overflow:hidden;
-  border: 1px solid rgba(0,0,0,.06);
-}
-
-.confBarFill{
-  height: 100%;
-  border-radius: 999px;
-  background: rgba(11,18,32,0.9);
-  width: 0%;
-  transition: width .35s ease;
-}
-
-.confHint{
-  margin-top: 8px;
-  font-size: 12px;
-  color: rgba(11,18,32,.60);
-  font-weight: 650;
-  line-height: 1.35;
-}
-
-/* Modern reasons list */
-.reasonsModern{
-  margin: 8px 0 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  gap: 10px;
-}
-
-.reasonsModern li{
-  background: rgba(0,0,0,.03);
-  border: 1px solid rgba(0,0,0,.06);
-  border-radius: 16px;
-  padding: 12px 12px;
-  font-weight: 700;
-  color: rgba(11,18,32,.86);
-  line-height: 1.45;
-}
-
-.miniDisclaimer{
-  margin-top: 12px;
-  font-size: 12px;
-  color: rgba(11,18,32,.62);
-  font-weight: 650;
-  padding-top: 12px;
-  border-top: 1px solid rgba(0,0,0,.06);
-}
-
-/* Responsive */
-@media (max-width: 980px){
-  .resultTop{ grid-template-columns: 1fr; }
-  .confidenceRow{ justify-content: flex-start; }
 }
