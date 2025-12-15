@@ -54,31 +54,71 @@
         <div id="status" class="status" aria-live="polite"></div>
 
         <!-- Results (kept for your existing app.js) -->
-        <div id="result" class="result card hidden">
-          <div class="resultHeader">
-            <div>
-              <div class="label">Verdict</div>
-              <div id="verdictText" class="verdict">—</div>
-            </div>
-            <span id="badge" class="badge">—</span>
-          </div>
+         <div id="result" class="result hidden">
+  <div class="resultTop">
+    <!-- Left: verdict -->
+    <div class="resultCard resultVerdict">
+      <div class="resultCardHead">
+        <div class="label">Pre-check outcome</div>
+        <span id="badge" class="badge">—</span>
+      </div>
 
-          <div class="grid">
-            <div>
-              <div class="label">Detected bank</div>
-              <div id="bankText" class="value">—</div>
-            </div>
-            <div>
-              <div class="label">Confidence</div>
-              <div id="confText" class="value">—</div>
-            </div>
-          </div>
+      <div class="verdictBig" id="verdictText">—</div>
+      <div class="resultMeta">
+        <span class="metaPill">Risk indicator (not a decision)</span>
+        <span class="metaPill">Explainable flags</span>
+      </div>
+    </div>
 
-          <div class="label" style="margin-top:14px;">Reasons</div>
-          <ul id="reasons" class="reasons"></ul>
+    <!-- Middle: detected bank -->
+    <div class="resultCard">
+      <div class="resultCardHead">
+        <div class="label">Detected bank</div>
+      </div>
+      <div class="statBig" id="bankText">—</div>
+      <div class="statSub">Based on branding + document signals</div>
+    </div>
+
+    <!-- Right: confidence ring -->
+    <div class="resultCard">
+      <div class="resultCardHead">
+        <div class="label">Confidence</div>
+      </div>
+
+      <div class="confidenceRow">
+        <div class="ring" id="confRing" style="--p: 0;">
+          <div class="ringInner">
+            <div class="ringValue" id="confText">—</div>
+            <div class="ringLabel">signal strength</div>
+          </div>
+        </div>
+
+        <div class="confRight">
+          <div class="confBar">
+            <div class="confBarFill" id="confBar" style="width:0%"></div>
+          </div>
+          <div class="confHint">Higher confidence = clearer matching signals</div>
         </div>
       </div>
-    </section>
+    </div>
+  </div>
+
+  <!-- Reasons -->
+  <div class="resultBottom">
+    <div class="resultCard">
+      <div class="resultCardHead">
+        <div class="label">Flags to review</div>
+      </div>
+
+      <ul id="reasons" class="reasonsModern"></ul>
+
+      <div class="miniDisclaimer">
+        <strong>Reminder:</strong> This is a document pre-check only. Always follow your normal controls and request originals where required.
+      </div>
+    </div>
+  </div>
+</div>
+
 
     <!-- TRUSTED BY -->
     <section class="section">

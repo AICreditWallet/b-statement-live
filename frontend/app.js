@@ -67,7 +67,14 @@ btn.addEventListener("click", async () => {
     setBadge(data.verdict);
 
     bankText.textContent = data.bank || "Unknown";
-    confText.textContent = `${Math.round((data.confidence || 0) * 100)}%`;
+    const conf = Math.max(0, Math.min(1, (data.confidence || 0)));
+confText.textContent = `${Math.round(conf * 100)}%`;
+
+// update ring + bar (new UI)
+const ring = document.getElementById("confRing");
+const bar = document.getElementById("confBar");
+if (ring) ring.style.setProperty("--p", conf);
+if (bar) bar.style.width = `${Math.round(conf * 100)}%`;
 
     reasonsEl.innerHTML = "";
     (data.reasons || []).forEach(r => {
