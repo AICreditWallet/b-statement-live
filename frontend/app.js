@@ -1,45 +1,66 @@
-// Read backend URL injected by index.html
 const API_BASE = window.API_BASE;
-
-if (!API_BASE) {
-  console.error("API_BASE is not defined. Check index.html.");
-}
 
 const input = document.getElementById("pdfInput");
 const fileName = document.getElementById("fileName");
 const btn = document.getElementById("analyzeBtn");
 const statusEl = document.getElementById("status");
-const result = document.getElementById("result");
-const verdictText = document.getElementById("verdictText");
-const badge = document.getElementById("badge");
+
+// New results UI
+const resultsSection = document.getElementById("resultsSection");
+const riskPill = document.getElementById("riskPill");
+const outcomeTitle = document.getElementById("outcomeTitle");
 const bankText = document.getElementById("bankText");
-const confText = document.getElementById("confText");
+const confPct = document.getElementById("confPct");
+const donut = document.getElementById("donut");
+const confBar = document.getElementById("confBar");
 const reasonsEl = document.getElementById("reasons");
 
-function setStatus(msg, kind = "") {
+function setStatus(msg, kind="") {
   statusEl.textContent = msg;
   statusEl.className = "status " + kind;
 }
 
-function setBadge(verdict) {
-  badge.className = "badge";
+function showResults() {
+  resultsSection.classList.remove("hidden");
+  resultsSection.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function hideResults() {
+  resultsSection.classList.add("hidden");
+}
+
+function setRiskPill(verdict) {
+  // Map your backend verdicts -> nicer label
+  // expected: likely_genuine | suspicious | likely_fake (or anything else)
+  riskPill.className = "riskPill";
+
   if (verdict === "likely_genuine") {
-    badge.textContent = "GREEN (low risk)";
-    badge.classList.add("green");
+    riskPill.textContent = "GREEN (low risk)";
+    riskPill.classList.add("green");
+    outcomeTitle.textContent = "likely genuine";
   } else if (verdict === "suspicious") {
-    badge.textContent = "AMBER (medium risk)";
-    badge.classList.add("amber");
+    riskPill.textContent = "AMBER (review)";
+    riskPill.classList.add("amber");
+    outcomeTitle.textContent = "needs review";
   } else {
-    badge.textContent = "RED (high risk)";
-    badge.classList.add("red");
+    riskPill.textContent = "RED (high risk)";
+    riskPill.classList.add("red");
+    outcomeTitle.textContent = "likely fake";
   }
+}
+
+function setConfidence(conf) {
+  const pct = Math.max(0, Math.min(100, Math.round((conf || 0) * 100)));
+  confPct.textContent = `${pct}%`;
+  donut.style.setProperty("--pct", pct);
+  confBar.style.width = `${pct}%`;
 }
 
 input.addEventListener("change", () => {
   const f = input.files?.[0];
   fileName.textContent = f ? f.name : "No file selected";
   btn.disabled = !f;
-  result.classList.add("hidden");
+  hideResults();
   setStatus("");
 });
 
@@ -54,28 +75,16 @@ btn.addEventListener("click", async () => {
   form.append("file", f);
 
   try {
-    const res = await fetch(`${API_BASE}/analyze`, {
-      method: "POST",
-      body: form
-    });
-
+    const res = await fetch(`${API_BASE}/analyze`, { method: "POST", body: form });
     const data = await res.json();
     if (!res.ok) throw new Error(data?.detail || "Request failed");
 
-    result.classList.remove("hidden");
-    verdictText.textContent = data.verdict.replaceAll("_", " ");
-    setBadge(data.verdict);
+    // Fill UI
+    setRiskPill(data.verdict);
+    bankText.textContent = data.bank || "unknown";
+    setConfidence(data.confidence);
 
-    bankText.textContent = data.bank || "Unknown";
-    const conf = Math.max(0, Math.min(1, (data.confidence || 0)));
-confText.textContent = `${Math.round(conf * 100)}%`;
-
-// update ring + bar (new UI)
-const ring = document.getElementById("confRing");
-const bar = document.getElementById("confBar");
-if (ring) ring.style.setProperty("--p", conf);
-if (bar) bar.style.width = `${Math.round(conf * 100)}%`;
-
+    // Flags
     reasonsEl.innerHTML = "";
     (data.reasons || []).forEach(r => {
       const li = document.createElement("li");
@@ -83,8 +92,10 @@ if (bar) bar.style.width = `${Math.round(conf * 100)}%`;
       reasonsEl.appendChild(li);
     });
 
-    setStatus("Done.", "ok");
+    setStatus("", "");
+    showResults();
   } catch (e) {
+    hideResults();
     setStatus(`Error: ${e.message}`, "err");
   } finally {
     btn.disabled = false;

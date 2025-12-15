@@ -32,7 +32,7 @@
 
         <div class="uploadCard">
           <div class="uploadRow">
-            <label class="filePick">
+            <label class="filePill">
               <input id="pdfInput" type="file" accept="application/pdf" />
               <span class="fileBtn">Choose PDF</span>
               <span id="fileName" class="fileName">No file selected</span>
@@ -44,42 +44,77 @@
           <div class="uploadHint">Best results with original PDF exports (not screenshots).</div>
         </div>
 
-        <div class="disclaimer">
+        <div class="disclaimerCard">
           <strong>Important:</strong> This tool provides a <strong>document risk indicator</strong> only.
           It does <strong>not</strong> verify authenticity, does <strong>not</strong> detect fraud, and must <strong>not</strong>
           be used as the sole basis for lending, onboarding, or compliance decisions.
         </div>
 
         <div id="status" class="status" aria-live="polite"></div>
+      </div>
+    </section>
 
-        <!-- Results (kept as-is; your app.js populates these IDs) -->
-        <div id="result" class="result hidden">
-          <div class="resultHeader">
-            <div>
-              <div class="label">Verdict</div>
-              <div id="verdictText" class="verdict">—</div>
+    <!-- RESULTS (fintech dashboard style) -->
+    <section id="resultsSection" class="resultsWrap hidden">
+      <div class="resultsInner">
+        <div class="resultsTop">
+          <div class="donePill">Done</div>
+        </div>
+
+        <div class="cards3">
+          <!-- OUTCOME -->
+          <div class="dashCard">
+            <div class="cardHeaderRow">
+              <div class="kicker">Pre-check outcome</div>
+              <span id="riskPill" class="riskPill">—</span>
             </div>
-            <span id="badge" class="badge">—</span>
+
+            <div id="outcomeTitle" class="bigOutcome">—</div>
+
+            <div class="chipRow">
+              <span class="chip">Risk indicator (not a decision)</span>
+              <span class="chip">Explainable flags</span>
+            </div>
           </div>
 
-          <div class="grid">
-            <div>
-              <div class="label">Detected bank</div>
-              <div id="bankText" class="value">—</div>
-            </div>
-            <div>
-              <div class="label">Confidence</div>
-              <div id="confText" class="value">—</div>
-            </div>
+          <!-- BANK -->
+          <div class="dashCard">
+            <div class="kicker">Detected bank</div>
+            <div id="bankText" class="bankBig">—</div>
+            <div class="mutedLine">Based on branding + document signals</div>
           </div>
 
-          <div class="label" style="margin-top:14px;">Reasons</div>
-          <ul id="reasons" class="reasons"></ul>
+          <!-- CONFIDENCE -->
+          <div class="dashCard">
+            <div class="kicker">Confidence</div>
+
+            <div class="confRow">
+              <div class="donut" id="donut" style="--pct:0;">
+                <div class="donutInner">
+                  <div id="confPct" class="donutPct">0%</div>
+                  <div class="donutSub">signal strength</div>
+                </div>
+              </div>
+
+              <div class="confRight">
+                <div class="barTrack">
+                  <div id="confBar" class="barFill" style="width:0%"></div>
+                </div>
+                <div class="confHint">Higher confidence = clearer matching signals</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- FLAGS -->
+        <div class="dashCard flagsCard">
+          <div class="kicker">Flags to review</div>
+          <ul id="reasons" class="flagsList"></ul>
         </div>
       </div>
     </section>
 
-    <!-- BELOW HERO (white background) -->
+    <!-- TRUSTED BY -->
     <section class="section">
       <div class="sectionTitle">Trusted by fintech and mortgage lenders</div>
       <div class="logosRow">
@@ -92,6 +127,7 @@
       <div class="sectionNote">Add real client logos only when you have permission.</div>
     </section>
 
+    <!-- SUPERPOWERS -->
     <section class="section">
       <h2 class="h2">Give your team superpowers</h2>
       <p class="sub2">Automate tedious, manual review and enable your team to do what they do best.</p>
@@ -100,10 +136,10 @@
         <div class="featureCard">
           <div class="pill">Automated pre-check</div>
           <h3>Faster document triage</h3>
-          <p>Quickly surface potential anomalies (metadata, layout, branding, extraction gaps) so your team knows what to review first.</p>
+          <p>Surface anomalies (metadata, layout, branding, extraction gaps) so teams know what to review first.</p>
 
           <div class="miniList">
-            <div class="miniItem"><span class="miniTag ok">Low risk</span> Clear structure + consistent branding</div>
+            <div class="miniItem"><span class="miniTag ok">Low risk</span> Consistent structure + branding</div>
             <div class="miniItem"><span class="miniTag warn">Review</span> Missing tables / unusual formatting</div>
           </div>
         </div>
@@ -111,7 +147,7 @@
         <div class="featureCard">
           <div class="pill">Explainable results</div>
           <h3>Clear flags, not black-box scores</h3>
-          <p>Every indicator includes “why” — so ops, advisers, and compliance can justify next steps and request originals when needed.</p>
+          <p>Every indicator includes “why” — so ops, advisers, and compliance can justify next steps.</p>
 
           <div class="mockReport">
             <div class="mockTitle">Example output</div>
@@ -124,6 +160,7 @@
       </div>
     </section>
 
+    <!-- HOW IT WORKS -->
     <section class="section">
       <h2 class="h2">How it works</h2>
 
@@ -137,7 +174,7 @@
         <div class="howCard">
           <div class="howDot"></div>
           <h3>Analyze</h3>
-          <p>We run basic checks across metadata, layout, branding, and extraction quality.</p>
+          <p>Basic checks across metadata, layout, branding, and extraction quality.</p>
         </div>
 
         <div class="howCard">
@@ -158,6 +195,7 @@
 
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
+    // Keep production default to Railway. You can override in dev by setting window.API_BASE before app.js
     window.API_BASE = window.API_BASE || "https://b-statement-live-production.up.railway.app";
   </script>
   <script src="./app.js"></script>
