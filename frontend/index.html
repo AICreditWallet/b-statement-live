@@ -30,9 +30,10 @@
         <h1>Pre-check bank statements in seconds</h1>
         <p class="heroSub">Upload a PDF. Get a risk indicator and clear flags to review.</p>
 
+        <!-- ONE upload control only -->
         <div class="uploadCard">
           <div class="uploadRow">
-            <label class="filePill">
+            <label class="filePill" aria-label="Choose a PDF bank statement">
               <input id="pdfInput" type="file" accept="application/pdf" />
               <span class="fileBtn">Choose PDF</span>
               <span id="fileName" class="fileName">No file selected</span>
@@ -45,11 +46,14 @@
         </div>
 
         <div class="disclaimerCard">
-          <strong>Important:</strong> This tool provides a <strong>document risk indicator</strong> only. It does <strong>not</strong> verify authenticity, does <strong>not</strong> detect fraud, and must <strong>not</strong> be used as the sole basis for lending, onboarding, or compliance decisions.
+          <strong>Important:</strong> This tool provides a <strong>document risk indicator</strong> only.
+          It does <strong>not</strong> verify authenticity, does <strong>not</strong> detect fraud, and must
+          <strong>not</strong> be used as the sole basis for lending, onboarding, or compliance decisions.
         </div>
 
         <div id="status" class="status" aria-live="polite"></div>
 
+        <!-- Results (kept for your existing app.js) -->
         <div id="result" class="result card hidden">
           <div class="resultHeader">
             <div>
@@ -79,11 +83,11 @@
     <!-- TRUSTED BY -->
     <section class="section">
       <div class="sectionTitle">Trusted by fintech and mortgage lenders</div>
-      <div class="logosRow">
+      <div class="logosRow" aria-label="Target teams">
         <div class="logoChip">Fintech Ops</div>
         <div class="logoChip">Mortgage Brokerages</div>
         <div class="logoChip">Credit Teams</div>
-        <div class="logoChip">Fraud & Compliance</div>
+        <div class="logoChip">Fraud &amp; Compliance</div>
         <div class="logoChip">Underwriting</div>
       </div>
       <div class="sectionNote">Add real client logos only when you have permission.</div>
@@ -99,8 +103,10 @@
           <div class="pill">Automated pre-check</div>
           <h3>Faster document triage</h3>
           <p>
-            Quickly surface potential anomalies (metadata, layout, branding, extraction gaps) so your team knows what to review first.
+            Quickly surface potential anomalies (metadata, layout, branding, extraction gaps)
+            so your team knows what to review first.
           </p>
+
           <div class="miniList">
             <div class="miniItem"><span class="miniTag ok">Low risk</span> Clear structure + consistent branding</div>
             <div class="miniItem"><span class="miniTag warn">Review</span> Missing tables / unusual formatting</div>
@@ -111,10 +117,11 @@
           <div class="pill">Explainable results</div>
           <h3>Clear flags, not black-box scores</h3>
           <p>
-            Every indicator includes “why” — so ops, advisers, and compliance can justify next steps and request originals when needed.
+            Every indicator includes “why” — so ops, advisers, and compliance can justify next steps
+            and request originals when needed.
           </p>
 
-          <div class="mockReport">
+          <div class="mockReport" aria-label="Example report placeholder">
             <div class="mockTitle">Example output</div>
             <div class="mockLine"></div>
             <div class="mockLine short"></div>
@@ -131,19 +138,19 @@
 
       <div class="howGrid">
         <div class="howCard">
-          <div class="howDot"></div>
+          <div class="howDot" aria-hidden="true"></div>
           <h3>Upload</h3>
           <p>Upload a bank statement PDF (original export recommended).</p>
         </div>
 
         <div class="howCard">
-          <div class="howDot"></div>
+          <div class="howDot" aria-hidden="true"></div>
           <h3>Analyze</h3>
           <p>We run basic checks across metadata, layout, branding, and extraction quality.</p>
         </div>
 
         <div class="howCard">
-          <div class="howDot"></div>
+          <div class="howDot" aria-hidden="true"></div>
           <h3>Review</h3>
           <p>You get a risk indicator + reasons, so your team decides the next step.</p>
         </div>
@@ -161,7 +168,7 @@
 
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
-    // IMPORTANT: keep API base set by your deployment (or hardcode Railway URL)
+    // Keep API base set by deployment (or hardcode Railway URL)
     window.API_BASE = window.API_BASE || "https://b-statement-live-production.up.railway.app";
   </script>
   <script src="./app.js"></script>

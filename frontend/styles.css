@@ -38,11 +38,13 @@ body{
   color:inherit;
 }
 .brandLogo{
-  width:45px;
-  height:55px;
-  border-radius:18px;
-  object-fit:cover;
+  width:56px;
+  height:56px;
+  border-radius:16px;
+  object-fit:contain;
+  background:#fff;
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+  padding:6px;
 }
 .brandName{
   font-weight:800;
@@ -79,11 +81,14 @@ body{
   border-color: #0b1220;
   color:#fff;
   padding:12px 16px;
-  min-width: 150px;
+  min-width: 170px;
 }
 .btn.ghost{
   background: transparent;
 }
+
+/* Page */
+.page{ padding-bottom: 60px; }
 
 /* Hero */
 .hero{
@@ -92,8 +97,9 @@ body{
 .heroInner{
   max-width: 1080px;
   margin: 0 auto;
-  background: radial-gradient(1200px 480px at 50% 10%, rgba(255,255,255,0.38), rgba(255,255,255,0.0)),
-              linear-gradient(180deg, var(--blue1) 0%, var(--blue2) 40%, var(--blue3) 100%);
+  background:
+    radial-gradient(1200px 480px at 50% 10%, rgba(255,255,255,0.38), rgba(255,255,255,0.0)),
+    linear-gradient(180deg, var(--blue1) 0%, var(--blue2) 40%, var(--blue3) 100%);
   border-radius: 34px;
   padding: 54px 26px 40px;
   box-shadow: var(--shadow);
@@ -135,7 +141,8 @@ body{
   flex-wrap: wrap;
 }
 
-.filePick{
+/* This matches your HTML: <label class="filePill"> ... */
+.filePill{
   display:flex;
   align-items:center;
   gap:12px;
@@ -146,7 +153,8 @@ body{
   min-width: min(560px, 100%);
 }
 
-.filePick input{
+/* Hide the real input so only our pill/button shows (prevents “tiny choose file”) */
+.filePill input{
   position:absolute;
   opacity:0;
   pointer-events:none;
@@ -158,7 +166,7 @@ body{
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  padding: 10px 12px;
+  padding: 10px 14px;
   border-radius: 14px;
   background:#f3f6fb;
   border:1px solid var(--line);
@@ -174,24 +182,16 @@ body{
   white-space:nowrap;
 }
 
-.status{
+.uploadHint{
   margin-top: 10px;
-  text-align:center;
-  font-weight:800;
-}
-.status.ok{ color:#0b7a2d; }
-.status.err{ color:#b42318; }
-.status.info{ color:#1d4ed8; }
-
-.micro{
-  margin-top: 8px;
   text-align:center;
   color: var(--muted);
   font-size: 13px;
+  font-weight: 600;
 }
 
-/* Disclaimer + result */
-.disclaimer{
+/* Disclaimer card (matches index.html: disclaimerCard) */
+.disclaimerCard{
   margin: 18px auto 0;
   max-width: 860px;
   padding: 12px 14px;
@@ -203,6 +203,17 @@ body{
   line-height: 1.35;
 }
 
+/* Status */
+.status{
+  margin-top: 10px;
+  text-align:center;
+  font-weight:800;
+}
+.status.ok{ color:#0b7a2d; }
+.status.err{ color:#b42318; }
+.status.info{ color:#1d4ed8; }
+
+/* Result */
 .result{
   margin: 18px auto 0;
   max-width: 860px;
@@ -266,8 +277,8 @@ body{
   font-weight: 650;
 }
 .reasons li{ margin: 8px 0; }
-.page{ padding-bottom: 60px; }
 
+/* Sections below hero */
 .section{
   max-width: 1080px;
   margin: 34px auto;
@@ -322,6 +333,7 @@ body{
   opacity: .75;
 }
 
+/* Feature cards */
 .featureGrid{
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -380,6 +392,7 @@ body{
 .mockLine{ height: 10px; border-radius: 999px; background: rgba(0,0,0,.08); margin: 10px 0; }
 .mockLine.short{ width: 62%; }
 
+/* How it works */
 .howGrid{
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -405,6 +418,7 @@ body{
 .howCard h3{ margin: 0 0 8px; font-size: 18px; }
 .howCard p{ margin: 0; opacity: .78; line-height: 1.6; }
 
+/* Footer */
 .footer{
   margin-top: 44px;
   padding: 28px 22px;
