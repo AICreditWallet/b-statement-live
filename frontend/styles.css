@@ -40,14 +40,11 @@ body{
   color:inherit;
 }
 .brandLogo{
-  width:52px;
-  height:52px;
+  width:56px;
+  height:56px;
   border-radius:16px;
-  object-fit:contain;
-  background:#fff;
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
-  border: 1px solid rgba(0,0,0,.06);
-  padding: 6px;
+  object-fit:cover;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.12);
 }
 .brandName{
   font-weight:800;
@@ -84,11 +81,9 @@ body{
   border-color: #0b1220;
   color:#fff;
   padding:12px 16px;
-  min-width: 170px;
+  min-width: 160px;
 }
-.btn.ghost{
-  background: transparent;
-}
+.btn.ghost{ background: transparent; }
 
 /* Hero */
 .hero{
@@ -97,9 +92,8 @@ body{
 .heroInner{
   max-width: 1080px;
   margin: 0 auto;
-  background:
-    radial-gradient(1200px 480px at 50% 10%, rgba(255,255,255,0.38), rgba(255,255,255,0.0)),
-    linear-gradient(180deg, var(--blue1) 0%, var(--blue2) 40%, var(--blue3) 100%);
+  background: radial-gradient(1200px 480px at 50% 10%, rgba(255,255,255,0.38), rgba(255,255,255,0.0)),
+              linear-gradient(180deg, var(--blue1) 0%, var(--blue2) 40%, var(--blue3) 100%);
   border-radius: 34px;
   padding: 54px 26px 40px;
   box-shadow: var(--shadow);
@@ -141,7 +135,7 @@ body{
   flex-wrap: wrap;
 }
 
-.filePill{
+.filePick{
   display:flex;
   align-items:center;
   gap:12px;
@@ -153,9 +147,9 @@ body{
   position: relative;
 }
 
-.filePill input{
+.filePick input{
   position:absolute;
-  inset: 0;
+  inset:0;
   opacity:0;
   cursor:pointer;
 }
@@ -164,12 +158,13 @@ body{
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  padding: 10px 14px;
+  padding: 10px 12px;
   border-radius: 14px;
   background:#f3f6fb;
   border:1px solid var(--line);
   font-weight:800;
   white-space:nowrap;
+  pointer-events:none;
 }
 
 .fileName{
@@ -178,6 +173,7 @@ body{
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
+  pointer-events:none;
 }
 
 .uploadHint{
@@ -185,10 +181,11 @@ body{
   text-align:center;
   color: var(--muted);
   font-size: 13px;
+  font-weight: 650;
 }
 
-/* Disclaimer + status + result */
-.disclaimerCard{
+/* Disclaimer + result */
+.disclaimer{
   margin: 18px auto 0;
   max-width: 860px;
   padding: 12px 14px;
@@ -411,6 +408,7 @@ body{
 .howCard h3{ margin: 0 0 8px; font-size: 18px; }
 .howCard p{ margin: 0; opacity: .78; line-height: 1.6; }
 
+/* Footer */
 .footer{
   margin-top: 44px;
   padding: 28px 22px;

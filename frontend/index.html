@@ -32,7 +32,7 @@
 
         <div class="uploadCard">
           <div class="uploadRow">
-            <label class="filePill">
+            <label class="filePick">
               <input id="pdfInput" type="file" accept="application/pdf" />
               <span class="fileBtn">Choose PDF</span>
               <span id="fileName" class="fileName">No file selected</span>
@@ -44,7 +44,7 @@
           <div class="uploadHint">Best results with original PDF exports (not screenshots).</div>
         </div>
 
-        <div class="disclaimerCard">
+        <div class="disclaimer">
           <strong>Important:</strong> This tool provides a <strong>document risk indicator</strong> only.
           It does <strong>not</strong> verify authenticity, does <strong>not</strong> detect fraud, and must <strong>not</strong>
           be used as the sole basis for lending, onboarding, or compliance decisions.
@@ -52,6 +52,7 @@
 
         <div id="status" class="status" aria-live="polite"></div>
 
+        <!-- Results (kept as-is; your app.js populates these IDs) -->
         <div id="result" class="result hidden">
           <div class="resultHeader">
             <div>
@@ -78,14 +79,14 @@
       </div>
     </section>
 
-    <!-- Everything below is normal page background -->
+    <!-- BELOW HERO (white background) -->
     <section class="section">
       <div class="sectionTitle">Trusted by fintech and mortgage lenders</div>
       <div class="logosRow">
         <div class="logoChip">Fintech Ops</div>
         <div class="logoChip">Mortgage Brokerages</div>
         <div class="logoChip">Credit Teams</div>
-        <div class="logoChip">Fraud & Compliance</div>
+        <div class="logoChip">Fraud &amp; Compliance</div>
         <div class="logoChip">Underwriting</div>
       </div>
       <div class="sectionNote">Add real client logos only when you have permission.</div>
@@ -99,9 +100,8 @@
         <div class="featureCard">
           <div class="pill">Automated pre-check</div>
           <h3>Faster document triage</h3>
-          <p>
-            Surface potential anomalies (metadata, layout, branding, extraction gaps) so your team knows what to review first.
-          </p>
+          <p>Quickly surface potential anomalies (metadata, layout, branding, extraction gaps) so your team knows what to review first.</p>
+
           <div class="miniList">
             <div class="miniItem"><span class="miniTag ok">Low risk</span> Clear structure + consistent branding</div>
             <div class="miniItem"><span class="miniTag warn">Review</span> Missing tables / unusual formatting</div>
@@ -111,9 +111,7 @@
         <div class="featureCard">
           <div class="pill">Explainable results</div>
           <h3>Clear flags, not black-box scores</h3>
-          <p>
-            Every indicator includes “why” — so ops, advisers, and compliance can justify next steps.
-          </p>
+          <p>Every indicator includes “why” — so ops, advisers, and compliance can justify next steps and request originals when needed.</p>
 
           <div class="mockReport">
             <div class="mockTitle">Example output</div>
