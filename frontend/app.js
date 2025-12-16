@@ -101,3 +101,30 @@ btn.addEventListener("click", async () => {
     btn.disabled = false;
   }
 });
+function renderAI(ai) {
+  const statusEl = document.getElementById("aiStatus");
+  const noteEl = document.getElementById("aiNote");
+
+  if (!ai || !ai.level) {
+    statusEl.textContent = "Unknown";
+    statusEl.className = "aiStatus neutral";
+    noteEl.textContent = "No AI analysis available.";
+    return;
+  }
+
+  if (ai.level === "none") {
+    statusEl.textContent = "NO";
+    statusEl.className = "aiStatus good";
+    noteEl.textContent = "No AI or automated document generation detected.";
+  } 
+  else if (ai.level === "possible") {
+    statusEl.textContent = "POSSIBLE";
+    statusEl.className = "aiStatus warn";
+    noteEl.textContent = ai.summary?.[0] || "Some automated indicators detected.";
+  } 
+  else if (ai.level === "strong") {
+    statusEl.textContent = "YES";
+    statusEl.className = "aiStatus bad";
+    noteEl.textContent = ai.summary?.[0] || "Strong AI-generated document indicators detected.";
+  }
+}

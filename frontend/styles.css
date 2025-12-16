@@ -549,3 +549,35 @@ body{
   .footerInner{ flex-direction: column; text-align: center; }
   .footerNote{ text-align: center; }
 }
+.resultCard {
+  background: #ffffff;
+  border-radius: 22px;
+  padding: 22px;
+  border: 1px solid rgba(0,0,0,.06);
+  box-shadow: 0 18px 50px rgba(0,0,0,.05);
+}
+
+.cardLabel {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #6b7280;
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+
+.aiStatus {
+  font-size: 22px;
+  font-weight: 900;
+  margin-bottom: 6px;
+}
+
+.aiStatus.good { color: #15803d; }      /* NO */
+.aiStatus.warn { color: #b45309; }      /* POSSIBLE */
+.aiStatus.bad  { color: #b91c1c; }      /* YES */
+
+.aiNote {
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.5;
+}
