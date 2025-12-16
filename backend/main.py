@@ -1,6 +1,6 @@
 import re
 from enum import Enum
-from typing import List, Tuple, Dict, Optional
+from typing import List, Tuple, Dict, Optional, Any
 from io import BytesIO
 
 import pdfplumber
@@ -10,17 +10,15 @@ from PyPDF2 import PdfReader
 
 app = FastAPI(title="B Statement Check API")
 
-# In production, lock this down to your frontend domain(s)
+# In production: keep only your deployed frontend domain.
+# For local dev you can temporarily add "http://localhost:3000" etc.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://b-statement-live.vercel.app"
-    ],
+    allow_origins=["https://b-statement-live.vercel.app"],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 
 class Verdict(str, Enum):
@@ -44,27 +42,36 @@ async def analyze_statement(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="File too large (max 10 MB).")
 
     try:
-        verdict, confidence, reasons, detected_bank = run_basic_checks(file_bytes)
+        verdict, confidence, reasons, detected_bank, sections, ai_info = run_basic_checks(file_bytes)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Analysis error: {e}")
 
+    # Keep old keys so frontend won't break + extra keys for new UI
     return {
         "verdict": verdict,
         "confidence": confidence,
         "reasons": reasons,
         "bank": detected_bank,
+        "sections": sections,
+        "ai_generated": ai_info,
     }
 
 
-def run_basic_checks(file_bytes: bytes) -> Tuple[str, float, List[str], str]:
-    """
-    Keep this function CRASH-PROOF:
-    - every variable used later MUST be defined early in function scope
-    - all blocks MUST be indented inside the function
-    """
+def run_basic_checks(
+    file_bytes: bytes
+) -> Tuple[str, float, List[str], str, Dict[str, List[str]], Dict[str, Any]]:
     reasons: List[str] = []
     score = 1.0
     detected_bank = "unknown"
+
+    # Grouped flags for UI (you can render these in separate cards later)
+    sections: Dict[str, List[str]] = {
+        "integrity": [],
+        "branding": [],
+        "layout": [],
+        "transactions": [],
+        "ai": [],
+    }
 
     # --- Read PDF (PyPDF2)
     pdf = PdfReader(BytesIO(file_bytes))
@@ -76,59 +83,96 @@ def run_basic_checks(file_bytes: bytes) -> Tuple[str, float, List[str], str]:
     # STRUCTURAL CHECKS
     # -------------------------
     if num_pages > 12:
-        score -= 0.20
-        reasons.append(f"Page count anomaly: {num_pages} pages (unusually high).")
+        score -= 0.15
+        msg = f"Unusual page count: {num_pages} pages."
+        reasons.append(msg)
+        sections["layout"].append(msg)
     elif num_pages > 8:
-        score -= 0.10
-        reasons.append(f"Page count warning: {num_pages} pages (upper end).")
+        score -= 0.08
+        msg = f"High page count: {num_pages} pages."
+        reasons.append(msg)
+        sections["layout"].append(msg)
 
     # -------------------------
-    # METADATA CHECKS
+    # METADATA CHECKS (REWEIGHTED)
     # -------------------------
     meta = pdf.metadata or {}
     producer = (getattr(meta, "producer", "") or meta.get("/Producer", "") or "").strip()
     creator = (getattr(meta, "creator", "") or meta.get("/Creator", "") or "").strip()
     lower_meta = (producer + " " + creator).lower().strip()
 
-    if not lower_meta:
-        score -= 0.25
-        reasons.append("Metadata anomaly: producer/creator missing (unusual).")
-    else:
-        high_risk_editors = [
-            "microsoft word", "powerpoint", "excel", "libreoffice", "openoffice",
-            "photoshop", "indesign", "canva", "figma", "nitro", "foxit",
-            "phantompdf", "pdf-xchange", "pdf editor", "smallpdf", "ilovepdf",
-            "sejda", "pdfelement", "wondershare",
-        ]
-        medium_risk_tools = [
-            "pdfcreator", "cutepdf", "primopdf", "pdf printer",
-            "google docs", "google drive", "camscanner", "scanner",
-        ]
-        likely_banklike = [
-            "quartz pdfcontext", "ios version", "pdfkit", "pdfium",
-            "adobe pdf library", "chrome pdf viewer",
-            "opentext output transformation", "opentext",
-        ]
+    # AI / synthetic signals (metadata-only, weak evidence)
+    ai_level, ai_reasons = ai_generation_signals(lower_meta)
+    ai_info = {
+        "level": ai_level,  # "none" | "possible" | "strong"
+        "summary": ai_reasons or ["No strong AI/synthetic indicators found in PDF metadata."],
+        "note": "This is metadata-based only (not a guarantee).",
+    }
+    sections["ai"].extend(ai_info["summary"])
+    reasons.extend(ai_info["summary"])
 
+    # Strong edit tools (these are meaningful signals)
+    high_risk_editors = [
+        "microsoft word", "powerpoint", "excel", "libreoffice", "openoffice",
+        "photoshop", "indesign", "canva", "figma", "nitro", "foxit",
+        "phantompdf", "pdf-xchange", "pdf editor", "smallpdf", "ilovepdf",
+        "sejda", "pdfelement", "wondershare",
+    ]
+
+    # Medium tools = possible post-processing
+    medium_risk_tools = [
+        "pdfcreator", "cutepdf", "primopdf", "pdf printer",
+        "google docs", "google drive", "camscanner", "scanner",
+    ]
+
+    # Often normal for app exports / system generated PDFs
+    banklike_or_os = [
+        "pdfkit", "quartz", "ios", "mac os", "coregraphics", "skia", "pdfium",
+        "adobe", "chrome", "chromium",
+    ]
+
+    strong_edit_signal = False
+
+    if not lower_meta:
+        # Missing metadata is common for fintech exports → small penalty only
+        score -= 0.03
+        msg = "Metadata: minimal or missing (can be normal for app-generated statements)."
+        reasons.append(msg)
+        sections["integrity"].append(msg)
+    else:
         if any(x in lower_meta for x in high_risk_editors):
-            score -= 0.45
-            reasons.append(
-                f"Metadata anomaly: producer/creator ('{producer or creator}') matches a known editor."
-            )
+            score -= 0.55
+            strong_edit_signal = True
+            msg = f"Metadata: shows possible editing tool ('{producer or creator}')."
+            reasons.append(msg)
+            sections["integrity"].append(msg)
         elif any(x in lower_meta for x in medium_risk_tools):
-            score -= 0.20
-            reasons.append(
-                f"Metadata warning: producer/creator ('{producer or creator}') is generic (post-processing possible)."
-            )
-        elif any(x in lower_meta for x in likely_banklike):
-            reasons.append(
-                f"Metadata check: producer='{producer or 'unknown'}', creator='{creator or 'unknown'}' looks bank/OS-like."
-            )
+            score -= 0.10
+            msg = f"Metadata: shows generic PDF tool ('{producer or creator}')."
+            reasons.append(msg)
+            sections["integrity"].append(msg)
+        elif any(x in lower_meta for x in banklike_or_os):
+            msg = f"Metadata: looks system-generated ('{producer or creator}')."
+            reasons.append(msg)
+            sections["integrity"].append(msg)
         else:
-            score -= 0.08
-            reasons.append(
-                f"Metadata check: producer='{producer or 'unknown'}', creator='{creator or 'unknown'}' not recognised (small caution)."
-            )
+            # Unknown metadata should not push genuine PDFs into RED
+            score -= 0.03
+            msg = f"Metadata: unrecognised producer/creator ('{producer or creator}')."
+            reasons.append(msg)
+            sections["integrity"].append(msg)
+
+    # Apply AI penalties gently (metadata-only)
+    if ai_level == "strong":
+        score -= 0.20
+        msg = "AI indicator: strong metadata signal of automated generation."
+        reasons.append(msg)
+        sections["ai"].append(msg)
+    elif ai_level == "possible":
+        score -= 0.05
+        msg = "AI indicator: possible metadata signal (weak evidence)."
+        reasons.append(msg)
+        sections["ai"].append(msg)
 
     # -------------------------
     # EXTRACT TEXT (ALL PAGES)
@@ -141,7 +185,7 @@ def run_basic_checks(file_bytes: bytes) -> Tuple[str, float, List[str], str]:
     first_lower = first_text.lower()
 
     # -------------------------
-    # BANK BRANDING CHECK (token list)
+    # BANK BRANDING CHECK
     # -------------------------
     bank_tokens = {
         "Lloyds": ["lloyds"],
@@ -159,60 +203,75 @@ def run_basic_checks(file_bytes: bytes) -> Tuple[str, float, List[str], str]:
         "Metro Bank": ["metro bank"],
         "Virgin Money": ["virgin money"],
     }
+
     for bank_name, tokens in bank_tokens.items():
         if any(t in first_lower for t in tokens):
             detected_bank = bank_name
             break
 
     if detected_bank == "unknown":
-        score -= 0.05
-        reasons.append("Branding check: bank name not matched to current list.")
+        score -= 0.06
+        msg = "Branding: bank name not matched to current list."
+        reasons.append(msg)
+        sections["branding"].append(msg)
     else:
-        reasons.append(f"Branding check: detected '{detected_bank}' on page 1.")
+        # small positive bump so genuine docs don't become red by default
+        score += 0.05
+        msg = f"Branding: detected '{detected_bank}' on page 1."
+        reasons.append(msg)
+        sections["branding"].append(msg)
 
     # -------------------------
-    # SIMPLE CONTENT CHECK
+    # SIMPLE CONTENT CHECK (SOFTER)
     # -------------------------
     if "balance" not in first_lower:
-        score -= 0.08
-        reasons.append("Content warning: 'balance' not found on page 1.")
+        score -= 0.03
+        msg = "Content: 'balance' not found on page 1 (not always an issue)."
+        reasons.append(msg)
+        sections["layout"].append(msg)
 
     # -------------------------
-    # LAYOUT CHECKS
+    # LAYOUT CHECKS (WEAK SIGNAL)
     # -------------------------
     layout_warnings = layout_anomaly_check(pages_text)
     if layout_warnings:
-        score -= 0.10
+        score -= 0.05
         reasons.extend(layout_warnings)
+        sections["layout"].extend(layout_warnings)
 
     # -------------------------
-    # TRANSACTION + RUNNING BALANCE (SAFE)
+    # TRANSACTION EXTRACTION + RUNNING BALANCE
     # -------------------------
-    txs: List[Dict] = []         # always defined
-    rb_warnings: List[str] = []  # always defined
+    txs: List[Dict] = []
+    rb_warnings: List[str] = []
 
     try:
         txs = extract_transactions_pdfplumber(file_bytes)
     except Exception as e:
-        reasons.append(f"Transaction parse error: {e}")
+        msg = f"Transactions: parse error ({e})."
+        reasons.append(msg)
+        sections["transactions"].append(msg)
         txs = []
 
     if not txs:
-        score -= 0.05
-        reasons.append(
-            "Transaction parse: could not extract structured transaction tables "
-            "(layout may be image-based or non-standard)."
-        )
+        # Not being able to extract tables is common → tiny penalty
+        score -= 0.02
+        msg = "Transactions: could not extract structured tables (common for some bank/app PDFs)."
+        reasons.append(msg)
+        sections["transactions"].append(msg)
     else:
         try:
             rb_warnings = running_balance_check_rows(txs)
         except Exception as e:
-            reasons.append(f"Running balance check error: {e}")
+            msg = f"Running balance check error: {e}"
+            reasons.append(msg)
+            sections["transactions"].append(msg)
             rb_warnings = []
 
         if rb_warnings:
             score -= 0.30
             reasons.extend(rb_warnings)
+            sections["transactions"].extend(rb_warnings)
 
     # -------------------------
     # NORMALISE SCORE
@@ -220,18 +279,21 @@ def run_basic_checks(file_bytes: bytes) -> Tuple[str, float, List[str], str]:
     score = max(0.05, min(score, 1.0))
 
     # -------------------------
-    # VERDICT BUCKETS
+    # VERDICT BUCKETS (UPDATED)
     # -------------------------
-    if score >= 0.95:
-        verdict = Verdict.likely_genuine
-    elif score >= 0.75:
-        verdict = Verdict.suspicious
-        reasons.append("Overall risk: medium – recommend manual review of statement.")
-    else:
+    if strong_edit_signal or score < 0.55:
         verdict = Verdict.likely_fake
-        reasons.append("Overall risk: high – multiple anomalies detected.")
+        reasons.append(
+            "Overall: high risk signals found — recommend requesting an original statement directly from the bank."
+        )
+    elif score < 0.82:
+        verdict = Verdict.suspicious
+        reasons.append("Overall: some elements need review — recommend manual checks.")
+    else:
+        verdict = Verdict.likely_genuine
+        reasons.append("Overall: looks consistent with a bank-generated PDF (not proof of authenticity).")
 
-    return verdict.value, score, reasons, detected_bank
+    return verdict.value, score, reasons, detected_bank, sections, ai_info
 
 
 def layout_anomaly_check(pages_text: List[str]) -> List[str]:
@@ -241,45 +303,34 @@ def layout_anomaly_check(pages_text: List[str]) -> List[str]:
 
     num_pages = len(pages_text)
 
-    first = pages_text[0].lower()
+    first = (pages_text[0] or "").lower()
     header_tokens = ["account", "sort code", "statement", "period"]
     header_hits = sum(1 for tok in header_tokens if tok in first)
     if header_hits <= 1:
-        warnings.append("Layout check: key header fields look missing/unclear on page 1.")
+        warnings.append("Layout: key header fields look missing/unclear on page 1.")
 
-    line_counts = [len(p.splitlines()) for p in pages_text]
+    line_counts = [len((p or "").splitlines()) for p in pages_text]
     if num_pages >= 3:
         internal = line_counts[1:-1]
         avg_lines = sum(internal) / max(1, len(internal))
         for idx in range(1, num_pages - 1):
             count = line_counts[idx]
             if avg_lines > 0 and count < 0.5 * avg_lines:
-                warnings.append(
-                    f"Layout check: page {idx+1} has far fewer lines than typical internal pages."
-                )
+                warnings.append(f"Layout: page {idx+1} has far fewer text lines than other pages.")
 
     pages_with_marker = []
     for idx, txt in enumerate(pages_text):
-        if re.search(r"page\s+\d+\s+of\s+\d+", txt.lower()):
+        if re.search(r"page\s+\d+\s+of\s+\d+", (txt or "").lower()):
             pages_with_marker.append(idx)
 
     if 0 < len(pages_with_marker) < num_pages:
         missing = [str(i + 1) for i in range(num_pages) if i not in pages_with_marker]
-        warnings.append(
-            "Layout check: 'Page X of Y' appears on some pages but missing on page(s): "
-            + ", ".join(missing)
-        )
+        warnings.append("Layout: page numbering marker appears on some pages but missing on: " + ", ".join(missing))
 
     return warnings
 
 
 def extract_transactions_pdfplumber(file_bytes: bytes) -> List[dict]:
-    """
-    Bank-agnostic transaction extractor (best-effort).
-    - Uses pdfplumber table extraction.
-    - Tries to map columns by header names across banks.
-    Returns rows with: page, row, debit, credit, balance
-    """
     transactions: List[dict] = []
 
     def _to_money(x: Optional[str]) -> Optional[float]:
@@ -289,7 +340,6 @@ def extract_transactions_pdfplumber(file_bytes: bytes) -> List[dict]:
         if not s:
             return None
         s = s.replace(",", "").replace("£", "").replace(" ", "")
-        # handle (123.45) negatives
         if s.startswith("(") and s.endswith(")"):
             s = "-" + s[1:-1]
         try:
@@ -310,12 +360,15 @@ def extract_transactions_pdfplumber(file_bytes: bytes) -> List[dict]:
                 headers = [(h or "").strip().lower() for h in table[0]]
 
                 date_idx = next((i for i, h in enumerate(headers) if "date" in h), None)
-                debit_idx = next((i for i, h in enumerate(headers) if "debit" in h or "paid out" in h or "out" == h), None)
-                credit_idx = next((i for i, h in enumerate(headers) if "credit" in h or "paid in" in h or "in" == h), None)
+                debit_idx = next(
+                    (i for i, h in enumerate(headers) if "debit" in h or "paid out" in h or h == "out"), None
+                )
+                credit_idx = next(
+                    (i for i, h in enumerate(headers) if "credit" in h or "paid in" in h or h == "in"), None
+                )
                 amount_idx = next((i for i, h in enumerate(headers) if "amount" in h), None)
                 balance_idx = next((i for i, h in enumerate(headers) if "balance" in h), None)
 
-                # If no balance column, this table likely isn't transactions
                 if balance_idx is None:
                     continue
 
@@ -348,15 +401,16 @@ def extract_transactions_pdfplumber(file_bytes: bytes) -> List[dict]:
                             else:
                                 credit = a
 
-                    transactions.append({
-                        "page": page_idx + 1,
-                        "row": row_idx,
-                        "debit": float(debit),
-                        "credit": float(credit),
-                        "balance": float(bal),
-                        # optional fields
-                        "date": (row[date_idx] if (date_idx is not None and date_idx < len(row)) else None),
-                    })
+                    transactions.append(
+                        {
+                            "page": page_idx + 1,
+                            "row": row_idx,
+                            "debit": float(debit),
+                            "credit": float(credit),
+                            "balance": float(bal),
+                            "date": (row[date_idx] if (date_idx is not None and date_idx < len(row)) else None),
+                        }
+                    )
 
     return transactions
 
@@ -365,11 +419,8 @@ def running_balance_check_rows(transactions: List[dict]) -> List[str]:
     warnings: List[str] = []
 
     if len(transactions) < 3:
-        return ["Running balance check: not enough transactions to validate."]
+        return ["Running balance: not enough extracted rows to validate."]
 
-    mismatches = 0
-    # Keep order as extracted (usually top-to-bottom). Some statements are reverse chronological.
-    # We do a tolerant check either direction: try forward; if too many mismatches, try reverse.
     def _count_mismatches(rows: List[dict]) -> Tuple[int, List[str]]:
         local_warn: List[str] = []
         m = 0
@@ -381,7 +432,7 @@ def running_balance_check_rows(transactions: List[dict]) -> List[str]:
                 m += 1
                 if m <= 5:
                     local_warn.append(
-                        f"Running balance mismatch on page {curr['page']} row {curr['row']} "
+                        f"Running balance: mismatch on page {curr['page']} row {curr['row']} "
                         f"(expected £{expected:.2f}, saw £{curr['balance']:.2f})."
                     )
         return m, local_warn
@@ -389,13 +440,56 @@ def running_balance_check_rows(transactions: List[dict]) -> List[str]:
     m1, w1 = _count_mismatches(transactions)
     m2, w2 = _count_mismatches(list(reversed(transactions)))
 
-    # choose direction with fewer mismatches
     if m2 < m1:
-        mismatches, warnings = m2, w2
+        mismatches, best_warn = m2, w2
     else:
-        mismatches, warnings = m1, w1
+        mismatches, best_warn = m1, w1
+
+    warnings.extend(best_warn)
 
     if mismatches >= 5:
-        warnings.append("Running balance mismatch: too many inconsistencies (stopped after 5).")
+        warnings.append("Running balance: many inconsistencies detected (showing first 5).")
 
     return warnings
+
+
+def ai_generation_signals(meta_text: str) -> Tuple[str, List[str]]:
+    """
+    Detects AI / synthetic PDF generation indicators based on metadata only.
+    Returns: (level, reasons)
+    level: "none" | "possible" | "strong"
+    """
+    reasons: List[str] = []
+    level = "none"
+
+    strong_ai_tools = [
+        "reportlab",
+        "weasyprint",
+        "wkhtmltopdf",
+        "langchain",
+        "playwright",
+        "puppeteer",
+        "headlesschrome",
+        "chatgpt",
+        "openai",
+        "gpt",
+    ]
+
+    generic_signals = [
+        "pdf generator",
+        "generator",
+    ]
+
+    lower = (meta_text or "").lower().strip()
+
+    if any(x in lower for x in strong_ai_tools):
+        level = "strong"
+        reasons.append("AI/synthetic indicator: metadata mentions an automated generation tool.")
+    elif not lower:
+        level = "possible"
+        reasons.append("AI/synthetic indicator: metadata missing (common in automated PDFs, but also common in real exports).")
+    elif any(x in lower for x in generic_signals):
+        level = "possible"
+        reasons.append("AI/synthetic indicator: metadata suggests a generic PDF generator (weak evidence).")
+
+    return level, reasons
