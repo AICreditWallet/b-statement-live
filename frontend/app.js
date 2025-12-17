@@ -15,7 +15,7 @@ const donut = document.getElementById("donut");
 const confBar = document.getElementById("confBar");
 const reasonsEl = document.getElementById("reasons");
 
-function setStatus(msg, kind="") {
+function setStatus(msg, kind = "") {
   statusEl.textContent = msg;
   statusEl.className = "status " + kind;
 }
@@ -30,8 +30,6 @@ function hideResults() {
 }
 
 function setRiskPill(verdict) {
-  // Map your backend verdicts -> nicer label
-  // expected: likely_genuine | suspicious | likely_fake (or anything else)
   riskPill.className = "riskPill";
 
   if (verdict === "likely_genuine") {
@@ -56,12 +54,53 @@ function setConfidence(conf) {
   confBar.style.width = `${pct}%`;
 }
 
+function renderAI(ai) {
+  const aiStatusEl = document.getElementById("aiStatus");
+  const aiNoteEl = document.getElementById("aiNote");
+
+  // If the card doesn't exist on the page, just safely do nothing.
+  if (!aiStatusEl || !aiNoteEl) return;
+
+  // Default
+  aiStatusEl.textContent = "NO";
+  aiStatusEl.className = "aiStatus good";
+  aiNoteEl.textContent = "No strong AI/synthetic indicators found in PDF metadata.";
+
+  if (!ai || !ai.level) {
+    aiStatusEl.textContent = "Unknown";
+    aiStatusEl.className = "aiStatus neutral";
+    aiNoteEl.textContent = "AI document analysis not available.";
+    return;
+  }
+
+  if (ai.level === "strong") {
+    aiStatusEl.textContent = "YES";
+    aiStatusEl.className = "aiStatus bad";
+    aiNoteEl.textContent =
+      ai.summary?.[0] || "Strong AI/synthetic document indicators detected in metadata.";
+    return;
+  }
+
+  if (ai.level === "possible") {
+    aiStatusEl.textContent = "POSSIBLE";
+    aiStatusEl.className = "aiStatus warn";
+    aiNoteEl.textContent =
+      ai.summary?.[0] || "Possible automated/synthetic indicators detected in metadata.";
+    return;
+  }
+
+  // ai.level === "none" (or anything else) => keep default "NO"
+}
+
 input.addEventListener("change", () => {
   const f = input.files?.[0];
   fileName.textContent = f ? f.name : "No file selected";
   btn.disabled = !f;
   hideResults();
   setStatus("");
+
+  // Reset AI card if you want
+  renderAI({ level: "none", summary: ["No strong AI/synthetic indicators found in PDF metadata."] });
 });
 
 btn.addEventListener("click", async () => {
@@ -86,11 +125,16 @@ btn.addEventListener("click", async () => {
 
     // Flags
     reasonsEl.innerHTML = "";
-    (data.reasons || []).forEach(r => {
+    (data.reasons || []).forEach((r) => {
       const li = document.createElement("li");
       li.textContent = r;
       reasonsEl.appendChild(li);
     });
+
+    // ✅ AI card (THIS is what you were missing)
+    // Backend sends: ai_generated (recommended)
+    // If your backend sends: ai_info or something else, this fallback still works.
+    renderAI(data.ai_generated || data.ai_info || null);
 
     setStatus("", "");
     showResults();
@@ -101,30 +145,3 @@ btn.addEventListener("click", async () => {
     btn.disabled = false;
   }
 });
-function renderAI(ai) {
-  const statusEl = document.getElementById("aiStatus");
-  const noteEl = document.getElementById("aiNote");
-
-  if (!ai || !ai.level) {
-    statusEl.textContent = "Unknown";
-    statusEl.className = "aiStatus neutral";
-    noteEl.textContent = "No AI analysis available.";
-    return;
-  }
-
-  if (ai.level === "none") {
-    statusEl.textContent = "NO";
-    statusEl.className = "aiStatus good";
-    noteEl.textContent = "No AI or automated document generation detected.";
-  } 
-  else if (ai.level === "possible") {
-    statusEl.textContent = "POSSIBLE";
-    statusEl.className = "aiStatus warn";
-    noteEl.textContent = ai.summary?.[0] || "Some automated indicators detected.";
-  } 
-  else if (ai.level === "strong") {
-    statusEl.textContent = "YES";
-    statusEl.className = "aiStatus bad";
-    noteEl.textContent = ai.summary?.[0] || "Strong AI-generated document indicators detected.";
-  }
-}
