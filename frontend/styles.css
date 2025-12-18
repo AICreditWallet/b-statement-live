@@ -649,3 +649,66 @@ body{
   background: radial-gradient(circle, rgba(70,110,255,0.14), rgba(70,110,255,0));
   pointer-events: none;
 }
+/* HOW IT WORKS */
+.how-it-works {
+  max-width: 1200px;
+  margin: 80px auto;
+  padding: 0 20px;
+  text-align: center;
+}
+
+.how-it-works h2 {
+  font-size: 36px;
+  margin-bottom: 40px;
+}
+
+/* Horizontal layout */
+.how-steps {
+  display: flex;
+  gap: 24px;
+  justify-content: center;
+}
+
+/* Individual cards */
+.how-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 32px 28px;
+  flex: 1;
+  min-width: 0;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  text-align: left;
+  position: relative;
+}
+
+/* Number circle */
+.step-dot {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #5b8cff, #7aa2ff);
+  color: white;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+/* Typography */
+.how-card h3 {
+  font-size: 20px;
+  margin-bottom: 10px;
+}
+
+.how-card p {
+  color: #555;
+  line-height: 1.6;
+}
+
+/* Responsive: stack vertically on small screens */
+@media (max-width: 900px) {
+  .how-steps {
+    flex-direction: column;
+  }
+}
