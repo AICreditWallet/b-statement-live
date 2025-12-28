@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Supplier Price Watch — B Statement Check</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+
+<body>
+  <header class="topbar">
+    <a class="brand" href="./index.html" aria-label="Home">
+      <img class="brandLogo" src="./assets/logo.png" alt="Logo" />
+      <div class="brandText">
+        <div class="brandName">B Statement Check</div>
+        <div class="brandTag">Simple fintech tools</div>
+      </div>
+    </a>
+  </header>
+
+  <main class="page">
+    <!-- HERO -->
+    <section class="hero">
+      <div class="heroInner">
+        <h1>Catch silent supplier price increases</h1>
+        <p class="heroSub">
+          We automatically monitor supplier invoices and alert you when prices quietly go up —
+          so you don’t lose money without noticing.
+        </p>
+
+        <div class="uploadCard" style="text-align:center;">
+          <div style="font-weight:900;font-size:18px;margin-bottom:6px;">No setup. No dashboards. No hassle.</div>
+          <div class="micro">Built for pubs, cafés, shops & owner-run businesses.</div>
+
+          <div style="margin-top:14px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+            <a class="btn primary" href="mailto:hello@YOURDOMAIN.com?subject=Supplier%20Price%20Watch%20-%20Early%20Access">
+              Join early access
+            </a>
+            <a class="btn" href="#how">See how it works</a>
+          </div>
+        </div>
+
+        <div class="disclaimerCard">
+          <strong>Note:</strong> This is an early access concept page. We don’t replace EPOS or accounting tools — we simply help protect your margins by spotting invoice price changes.
+        </div>
+      </div>
+    </section>
+
+    <!-- TRUST / VALUE -->
+    <section class="section">
+      <h2 class="h2">Protect your margins in the background</h2>
+      <p class="sub2">
+        Small businesses lose money every month — not from sales, but from suppliers quietly raising prices.
+        We watch what you’re charged and flag changes early.
+      </p>
+
+      <div class="featureGrid">
+        <div class="featureCard">
+          <div class="pill">Automatic monitoring</div>
+          <h3>Spot increases you’d normally miss</h3>
+          <p>
+            We compare invoices over time and alert you when costs creep up — product prices, delivery charges, or discounts disappearing.
+          </p>
+        </div>
+
+        <div class="featureCard">
+          <div class="pill">Clear alerts</div>
+          <h3>Know exactly what changed</h3>
+          <p>
+            Each alert shows the old price, the new price, and an estimated impact — so you can challenge it or adjust pricing confidently.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section class="section" id="how">
+      <h2 class="h2">How it works</h2>
+
+      <div class="howGrid">
+        <div class="howCard">
+          <div class="howDot"></div>
+          <h3>1) Send invoices</h3>
+          <p>Upload PDFs/photos or forward invoices by email (simple for busy teams).</p>
+        </div>
+
+        <div class="howCard">
+          <div class="howDot"></div>
+          <h3>2) We compare prices</h3>
+          <p>We track the same items over time and detect increases or missing discounts.</p>
+        </div>
+
+        <div class="howCard">
+          <div class="howDot"></div>
+          <h3>3) You get alerts</h3>
+          <p>Clear notifications showing what changed and what it could cost you.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="section">
+      <div class="featureCard" style="text-align:center;">
+        <h3 style="margin-top:0;">Want to be a free pilot customer?</h3>
+        <p style="max-width:720px;margin:0 auto;opacity:.78;line-height:1.6;">
+          If you run a pub, café, shop, or small business in the UK, we’d love to offer this free in exchange for feedback.
+        </p>
+        <div style="margin-top:14px;">
+          <a class="btn primary" href="mailto:hello@YOURDOMAIN.com?subject=Free%20Pilot%20-%20Supplier%20Price%20Watch">
+            Request a free pilot
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div class="footerInner">
+        <div>© <span id="year"></span> B Statement Check</div>
+        <div class="footerNote">Early access concept • UK small business focus</div>
+      </div>
+    </footer>
+  </main>
+
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
