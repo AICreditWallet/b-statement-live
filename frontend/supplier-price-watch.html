@@ -3,126 +3,232 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Supplier Price Watch — B Statement Check</title>
+  <title>Supplier Price Watch</title>
   <link rel="stylesheet" href="./styles.css" />
+  <style>
+    /* Page-specific styles (kept small) */
+    .spwWrap { max-width: 1100px; margin: 0 auto; padding: 28px 18px 60px; }
+    .spwHero { margin: 18px 0 18px; padding: 34px 26px; border-radius: 26px; background: linear-gradient(180deg, rgba(73,120,255,.92), rgba(73,120,255,.80)); box-shadow: 0 20px 60px rgba(0,0,0,.10); color: #fff; }
+    .spwHero h1 { font-size: clamp(32px, 4vw, 54px); line-height: 1.05; margin: 0 0 10px; letter-spacing: -0.03em; }
+    .spwHero p { margin: 0; font-size: 16px; opacity: .95; max-width: 70ch; }
+    .spwCard { background: #fff; border-radius: 22px; box-shadow: 0 12px 40px rgba(0,0,0,.08); padding: 18px; border: 1px solid rgba(0,0,0,.06); }
+    .spwGrid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 16px; margin-top: 16px; }
+    @media (max-width: 900px) { .spwGrid { grid-template-columns: 1fr; } }
+    .spwRow { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .spwBtn { border: 0; border-radius: 14px; padding: 12px 14px; font-weight: 700; cursor: pointer; }
+    .spwBtn.primary { background: #0b1220; color: #fff; }
+    .spwBtn.ghost { background: #f3f6ff; color: #0b1220; border: 1px solid rgba(0,0,0,.08); }
+    .spwSmall { font-size: 13px; color: rgba(0,0,0,.66); }
+    .pill { display:inline-flex; align-items:center; gap:8px; padding: 8px 10px; border-radius: 999px; font-weight: 700; font-size: 12px; border: 1px solid rgba(0,0,0,.08); }
+    .pill.good { background: #eafff1; color: #0b6b2f; }
+    .pill.warn { background: #fff6db; color: #8a5a00; }
+    .pill.bad  { background: #ffe5e5; color: #8a0000; }
+    .spwKpi { display:grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px;}
+    @media (max-width: 720px){ .spwKpi{ grid-template-columns: 1fr; } }
+    .kpiBox { padding: 14px; border-radius: 18px; border: 1px solid rgba(0,0,0,.07); background: #fafbff; }
+    .kpiBox .label { font-size: 12px; color: rgba(0,0,0,.62); }
+    .kpiBox .value { font-size: 18px; font-weight: 900; margin-top: 6px; letter-spacing: -0.01em; }
+    .spwTable { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    .spwTable th, .spwTable td { padding: 10px 8px; border-bottom: 1px solid rgba(0,0,0,.08); font-size: 13px; text-align: left; }
+    .spwTable th { color: rgba(0,0,0,.65); font-weight: 800; }
+    .muted { color: rgba(0,0,0,.60); font-size: 13px; }
+    .hr { height: 1px; background: rgba(0,0,0,.08); margin: 14px 0; }
+    .tag { display:inline-block; padding: 6px 10px; border-radius: 999px; background:#f2f4ff; border: 1px solid rgba(0,0,0,.07); font-size: 12px; font-weight: 700; }
+    .hidden { display:none !important; }
+    .field { display:flex; flex-direction:column; gap:6px; margin-top: 10px; }
+    .field label { font-weight: 800; font-size: 12px; color: rgba(0,0,0,.70); }
+    .field input { padding: 12px 12px; border-radius: 14px; border: 1px solid rgba(0,0,0,.12); background: #fff; }
+    .miniGrid { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; }
+    @media (max-width: 720px){ .miniGrid { grid-template-columns: 1fr; } }
+    .noteBox { padding: 12px 14px; border-radius: 18px; background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.22); margin-top: 16px; }
+  </style>
 </head>
-
 <body>
-  <header class="topbar">
-    <a class="brand" href="./index.html" aria-label="Home">
-      <img class="brandLogo" src="./assets/logo.png" alt="Logo" />
-      <div class="brandText">
-        <div class="brandName">B Statement Check</div>
-        <div class="brandTag">Simple fintech tools</div>
+
+  <header class="topBar">
+    <div class="topBarInner">
+      <div class="brand">
+        <img class="logo" src="./assets/logo.png" alt="B" />
+        <div>
+          <div class="brandName">B Statement Check</div>
+          <div class="brandTag">Simple fintech tools</div>
+        </div>
       </div>
-    </a>
+
+      <nav class="navLinks">
+        <a class="navLink" href="./index.html">Bank Statement Check</a>
+        <a class="navLink active" href="./supplier-price-watch.html">Supplier Price Watch</a>
+      </nav>
+    </div>
   </header>
 
-  <main class="page">
-    <!-- HERO -->
-    <section class="hero">
-      <div class="heroInner">
-        <h1>Catch silent supplier price increases</h1>
-        <p class="heroSub">
-          We automatically monitor supplier invoices and alert you when prices quietly go up —
-          so you don’t lose money without noticing.
-        </p>
+  <main class="spwWrap">
 
-        <div class="uploadCard" style="text-align:center;">
-          <div style="font-weight:900;font-size:18px;margin-bottom:6px;">No setup. No dashboards. No hassle.</div>
-          <div class="micro">Built for pubs, cafés, shops & owner-run businesses.</div>
+    <section class="spwHero">
+      <h1>Catch silent supplier price increases</h1>
+      <p>
+        Upload any supplier invoice (PDF or phone photo). We highlight your biggest costs, remember prices per supplier,
+        and alert you next time if prices go up — in simple English.
+      </p>
 
-          <div style="margin-top:14px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-            <a class="btn primary" href="mailto:hello@YOURDOMAIN.com?subject=Supplier%20Price%20Watch%20-%20Early%20Access">
-              Join early access
-            </a>
-            <a class="btn" href="#how">See how it works</a>
+      <div class="noteBox">
+        <strong>Works like this:</strong> Upload → Analyse → Save → Next upload → Alert.
+      </div>
+    </section>
+
+    <section class="spwGrid">
+      <!-- Upload + Input -->
+      <div class="spwCard">
+        <div class="spwRow" style="justify-content: space-between;">
+          <div>
+            <div class="tag">Upload invoice</div>
+            <div class="muted" style="margin-top:6px;">PDF or photo. Instant result. Saved for next time.</div>
+          </div>
+          <button id="clearAllBtn" class="spwBtn ghost" title="Clear saved history">Clear history</button>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="spwRow">
+          <input id="invoiceFile" type="file" accept="application/pdf,image/*" />
+          <button id="analyseBtn" class="spwBtn primary" disabled>Analyse</button>
+          <span id="status" class="spwSmall"></span>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="tag">If your invoice text can’t be read, enter basics (still fast)</div>
+
+        <div class="field">
+          <label>Supplier name (required)</label>
+          <input id="supplierName" placeholder="e.g. ABC Drinks, Bidfood, Electric Company" />
+        </div>
+
+        <div class="miniGrid">
+          <div class="field">
+            <label>Invoice date (optional)</label>
+            <input id="invoiceDate" placeholder="e.g. 2025-12-28" />
+          </div>
+          <div class="field">
+            <label>Currency (optional)</label>
+            <input id="currency" value="£" />
+          </div>
+          <div class="field">
+            <label>Notes (optional)</label>
+            <input id="notes" placeholder="e.g. weekly delivery" />
           </div>
         </div>
 
-        <div class="disclaimerCard">
-          <strong>Note:</strong> This is an early access concept page. We don’t replace EPOS or accounting tools — we simply help protect your margins by spotting invoice price changes.
+        <div class="hr"></div>
+
+        <div class="tag">Add items (what you were charged)</div>
+
+        <div class="miniGrid">
+          <div class="field">
+            <label>Item</label>
+            <input id="itemName" placeholder="e.g. Coffee beans 1kg" />
+          </div>
+          <div class="field">
+            <label>Unit price</label>
+            <input id="itemPrice" placeholder="e.g. 18.50" />
+          </div>
+          <div class="field">
+            <label>Qty</label>
+            <input id="itemQty" placeholder="e.g. 2" />
+          </div>
+        </div>
+
+        <div class="spwRow" style="margin-top: 10px;">
+          <button id="addItemBtn" class="spwBtn ghost">Add item</button>
+          <button id="clearItemsBtn" class="spwBtn ghost">Clear items</button>
+          <span class="spwSmall">Tip: add your top 5–15 lines first.</span>
+        </div>
+
+        <table class="spwTable" id="itemsTable">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Unit</th>
+              <th>Qty</th>
+              <th>Total</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+
+        <div class="muted" style="margin-top:10px;">
+          ⚠️ MVP note: PDF/photo auto-reading is coming next. This version works now by saving and comparing prices you enter.
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div class="spwCard">
+        <div class="tag">Results</div>
+
+        <div id="resultsEmpty" class="muted" style="margin-top:10px;">
+          Upload an invoice and click <strong>Analyse</strong> to see your cost breakdown and any alerts.
+        </div>
+
+        <div id="results" class="hidden">
+          <div class="hr"></div>
+
+          <div class="spwRow" style="justify-content: space-between;">
+            <div>
+              <div style="font-weight: 900; font-size: 18px;" id="resultsSupplier"></div>
+              <div class="muted" id="resultsMeta"></div>
+            </div>
+
+            <span id="alertPill" class="pill good">No increases</span>
+          </div>
+
+          <div class="spwKpi">
+            <div class="kpiBox">
+              <div class="label">Invoice total</div>
+              <div class="value" id="kpiTotal">£0.00</div>
+            </div>
+            <div class="kpiBox">
+              <div class="label">Most costly item</div>
+              <div class="value" id="kpiTopItem">—</div>
+            </div>
+            <div class="kpiBox">
+              <div class="label">Price increases</div>
+              <div class="value" id="kpiIncreases">0</div>
+            </div>
+          </div>
+
+          <div class="hr"></div>
+
+          <div style="font-weight: 900; margin-bottom: 6px;">Where your money goes</div>
+          <table class="spwTable" id="summaryTable">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Now</th>
+                <th>Prev</th>
+                <th>Change</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+
+          <div class="hr"></div>
+
+          <div style="font-weight: 900; margin-bottom: 6px;">What to focus on</div>
+          <div class="muted" id="focusText"></div>
+
         </div>
       </div>
     </section>
 
-    <!-- TRUST / VALUE -->
-    <section class="section">
-      <h2 class="h2">Protect your margins in the background</h2>
-      <p class="sub2">
-        Small businesses lose money every month — not from sales, but from suppliers quietly raising prices.
-        We watch what you’re charged and flag changes early.
-      </p>
-
-      <div class="featureGrid">
-        <div class="featureCard">
-          <div class="pill">Automatic monitoring</div>
-          <h3>Spot increases you’d normally miss</h3>
-          <p>
-            We compare invoices over time and alert you when costs creep up — product prices, delivery charges, or discounts disappearing.
-          </p>
-        </div>
-
-        <div class="featureCard">
-          <div class="pill">Clear alerts</div>
-          <h3>Know exactly what changed</h3>
-          <p>
-            Each alert shows the old price, the new price, and an estimated impact — so you can challenge it or adjust pricing confidently.
-          </p>
-        </div>
-      </div>
+    <section style="margin-top: 16px;" class="spwCard">
+      <div class="tag">Saved supplier history</div>
+      <div class="muted" style="margin-top:8px;">Your last saved prices per supplier (stored in this browser for now).</div>
+      <div id="historyList" style="margin-top:10px;"></div>
     </section>
 
-    <!-- HOW IT WORKS -->
-    <section class="section" id="how">
-      <h2 class="h2">How it works</h2>
-
-      <div class="howGrid">
-        <div class="howCard">
-          <div class="howDot"></div>
-          <h3>1) Send invoices</h3>
-          <p>Upload PDFs/photos or forward invoices by email (simple for busy teams).</p>
-        </div>
-
-        <div class="howCard">
-          <div class="howDot"></div>
-          <h3>2) We compare prices</h3>
-          <p>We track the same items over time and detect increases or missing discounts.</p>
-        </div>
-
-        <div class="howCard">
-          <div class="howDot"></div>
-          <h3>3) You get alerts</h3>
-          <p>Clear notifications showing what changed and what it could cost you.</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- CTA -->
-    <section class="section">
-      <div class="featureCard" style="text-align:center;">
-        <h3 style="margin-top:0;">Want to be a free pilot customer?</h3>
-        <p style="max-width:720px;margin:0 auto;opacity:.78;line-height:1.6;">
-          If you run a pub, café, shop, or small business in the UK, we’d love to offer this free in exchange for feedback.
-        </p>
-        <div style="margin-top:14px;">
-          <a class="btn primary" href="mailto:hello@YOURDOMAIN.com?subject=Free%20Pilot%20-%20Supplier%20Price%20Watch">
-            Request a free pilot
-          </a>
-        </div>
-      </div>
-    </section>
-
-    <footer class="footer">
-      <div class="footerInner">
-        <div>© <span id="year"></span> B Statement Check</div>
-        <div class="footerNote">Early access concept • UK small business focus</div>
-      </div>
-    </footer>
   </main>
 
-  <script>
-    document.getElementById("year").textContent = new Date().getFullYear();
-  </script>
+  <script src="./supplier-price-watch.js"></script>
 </body>
 </html>
