@@ -38,6 +38,8 @@ const historyList = document.getElementById("historyList");
 
 let items = [];
 
+/* ---------------- helpers ---------------- */
+
 function loadHistory() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -64,36 +66,6 @@ function setStatus(msg) {
   statusEl.textContent = msg || "";
 }
 
-function renderItems() {
-  itemsTableBody.innerHTML = "";
-  items.forEach((it, idx) => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${escapeHtml(it.name)}</td>
-      <td>${escapeHtml(it.currency)}${Number(it.unitPrice).toFixed(2)}</td>
-      <td>${Number(it.qty)}</td>
-      <td>${escapeHtml(it.currency)}${(it.unitPrice * it.qty).toFixed(2)}</td>
-      <td><button data-i="${idx}" class="removeBtn">✕</button></td>
-    `;
-    itemsTableBody.appendChild(tr);
-  });
-
-  // remove handlers
-  itemsTableBody.querySelectorAll(".removeBtn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const i = Number(btn.getAttribute("data-i"));
-      items.splice(i, 1);
-      renderItems();
-      validate();
-    });
-  });
-}
-
-function validate() {
-  const supplierOk = normalizeSupplierName(supplierNameEl.value).length > 0;
-  analyseBtn.disabled = !(supplierOk && items.length > 0);
-}
-
 function escapeHtml(s) {
   return String(s || "")
     .replaceAll("&", "&amp;")
@@ -105,9 +77,21 @@ function escapeHtml(s) {
 
 function calcInvoice(items) {
   const total = items.reduce((sum, it) => sum + (it.unitPrice * it.qty), 0);
-  const sorted = [...items].sort((a,b) => (b.unitPrice*b.qty) - (a.unitPrice*a.qty));
-  const topItem = sorted[0] ? `${sorted[0].name} (${money(sorted[0].unitPrice*sorted[0].qty, sorted[0].currency)})` : "—";
+  const sorted = [...items].sort((a, b) => (b.unitPrice * b.qty) - (a.unitPrice * a.qty));
+  const topItem = sorted[0]
+    ? `${sorted[0].name} (${money(sorted[0].unitPrice * sorted[0].qty, sorted[0].currency)})`
+    : "—";
   return { total, topItem };
+}
+
+function buildPricesMap(items) {
+  const map = {};
+  items.forEach(it => {
+    const key = it.name.trim().toLowerCase();
+    if (!key) return;
+    map[key] = { unitPrice: Number(it.unitPrice), currency: it.currency };
+  });
+  return map;
 }
 
 function compareWithPrevious(prevPricesMap, currentItems) {
@@ -119,11 +103,10 @@ function compareWithPrevious(prevPricesMap, currentItems) {
     const prevPrice = (prev && typeof prev.unitPrice === "number") ? prev.unitPrice : null;
 
     let changeText = "—";
-    let changeValue = 0;
+    let diff = 0;
 
     if (prevPrice != null) {
-      const diff = it.unitPrice - prevPrice;
-      changeValue = diff;
+      diff = it.unitPrice - prevPrice;
       if (Math.abs(diff) < 0.0001) changeText = "No change";
       else if (diff > 0) changeText = `+${money(diff, it.currency)} per unit`;
       else changeText = `-${money(Math.abs(diff), it.currency)} per unit`;
@@ -146,20 +129,40 @@ function compareWithPrevious(prevPricesMap, currentItems) {
     };
   });
 
-  // Sort: biggest increases first
-  increases.sort((a,b) => b.diff - a.diff);
-
+  increases.sort((a, b) => b.diff - a.diff);
   return { increases, rows };
 }
 
-function buildPricesMap(items) {
-  const map = {};
-  items.forEach(it => {
-    const key = it.name.trim().toLowerCase();
-    if (!key) return;
-    map[key] = { unitPrice: Number(it.unitPrice), currency: it.currency };
+/* ---------------- UI rendering ---------------- */
+
+function renderItems() {
+  itemsTableBody.innerHTML = "";
+
+  items.forEach((it, idx) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${escapeHtml(it.name)}</td>
+      <td>${escapeHtml(it.currency)}${Number(it.unitPrice).toFixed(2)}</td>
+      <td>${Number(it.qty)}</td>
+      <td>${escapeHtml(it.currency)}${(it.unitPrice * it.qty).toFixed(2)}</td>
+      <td><button data-i="${idx}" class="removeBtn">✕</button></td>
+    `;
+    itemsTableBody.appendChild(tr);
   });
-  return map;
+
+  itemsTableBody.querySelectorAll(".removeBtn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const i = Number(btn.getAttribute("data-i"));
+      items.splice(i, 1);
+      renderItems();
+      validate();
+    });
+  });
+}
+
+function validate() {
+  const supplierOk = normalizeSupplierName(supplierNameEl.value).length > 0;
+  analyseBtn.disabled = !(supplierOk && items.length > 0);
 }
 
 function renderResults({ supplier, invoiceDate, currency, notes, items, compare }) {
@@ -178,7 +181,6 @@ function renderResults({ supplier, invoiceDate, currency, notes, items, compare 
   kpiTopItem.textContent = topItem;
   kpiIncreases.textContent = String(compare.increases.length);
 
-  // pill state
   if (compare.increases.length === 0) {
     alertPill.className = "pill good";
     alertPill.textContent = "No price increases";
@@ -190,7 +192,6 @@ function renderResults({ supplier, invoiceDate, currency, notes, items, compare 
     alertPill.textContent = `${compare.increases.length} increases found`;
   }
 
-  // table
   summaryTableBody.innerHTML = "";
   compare.rows.forEach(r => {
     const tr = document.createElement("tr");
@@ -203,9 +204,9 @@ function renderResults({ supplier, invoiceDate, currency, notes, items, compare 
     summaryTableBody.appendChild(tr);
   });
 
-  // focus text (plain english)
   if (compare.increases.length === 0) {
-    focusText.textContent = "Good news — we didn’t detect any unit price increases for the items on this invoice compared to your last saved invoice for this supplier.";
+    focusText.textContent =
+      "Good news — we didn’t detect any unit price increases for the items on this invoice compared to your last saved invoice for this supplier.";
   } else {
     const top = compare.increases[0];
     focusText.textContent =
@@ -245,9 +246,12 @@ function renderHistory() {
       delete h[key];
       saveHistory(h);
       renderHistory();
+      setStatus("Supplier removed from history.");
     });
   });
 }
+
+/* ---------------- events ---------------- */
 
 addItemBtn.addEventListener("click", () => {
   const name = (itemNameEl.value || "").trim();
@@ -272,7 +276,7 @@ clearItemsBtn.addEventListener("click", () => {
   items = [];
   renderItems();
   validate();
-  setStatus("");
+  setStatus("Items cleared.");
 });
 
 [supplierNameEl, invoiceDateEl, currencyEl, notesEl].forEach(el => {
@@ -282,10 +286,17 @@ clearItemsBtn.addEventListener("click", () => {
 invoiceFile.addEventListener("change", () => {
   // MVP: we accept file but we don't parse it yet
   // Later we will send it to backend OCR.
+  if (invoiceFile.files?.[0]) {
+    setStatus(`Selected: ${invoiceFile.files[0].name} (MVP: not parsed yet)`);
+  } else {
+    setStatus("");
+  }
   validate();
 });
 
 analyseBtn.addEventListener("click", () => {
+  setStatus("");
+
   const supplierDisplay = (supplierNameEl.value || "").trim();
   const supplierKey = normalizeSupplierName(supplierDisplay);
   const invoiceDate = (invoiceDateEl.value || "").trim();
@@ -310,6 +321,7 @@ analyseBtn.addEventListener("click", () => {
   };
   saveHistory(history);
 
+  // render
   renderResults({
     supplier: supplierDisplay,
     invoiceDate,
@@ -320,7 +332,12 @@ analyseBtn.addEventListener("click", () => {
   });
 
   renderHistory();
-  setStatus(compare.increases.length ? "Saved. Price increases detected." : "Saved. No increases detected.");
+
+  setStatus(
+    compare.increases.length
+      ? "Saved. Price increases detected."
+      : "Saved. No increases detected."
+  );
 });
 
 clearAllBtn.addEventListener("click", () => {
@@ -330,7 +347,8 @@ clearAllBtn.addEventListener("click", () => {
   setStatus("History cleared.");
 });
 
-// initial
+/* ---------------- init ---------------- */
+
 renderItems();
 validate();
 renderHistory();
