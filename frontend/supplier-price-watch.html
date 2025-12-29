@@ -4,8 +4,9 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Supplier Price Watch</title>
-  <link rel="stylesheet" href="./styles.css">
-<script defer src="./supplier-price-watch.js"></script>
+
+  <link rel="stylesheet" href="./styles.css" />
+  <script defer src="./supplier-price-watch.js"></script>
 
   <style>
     /* Page-specific styles (kept small) */
@@ -42,9 +43,67 @@
     .field input { padding: 12px 12px; border-radius: 14px; border: 1px solid rgba(0,0,0,.12); background: #fff; }
     .miniGrid { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; }
     @media (max-width: 720px){ .miniGrid { grid-template-columns: 1fr; } }
-    .noteBox { padding: 12px 14px; border-radius: 18px; background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.22); margin-top: 16px; }
+
+    /* NEW: hero strip actions (upload + analyse inside the blue strip) */
+    .heroActions{
+      margin-top: 16px;
+      display:flex;
+      gap:12px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .fileMini{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:10px 12px;
+      border-radius:999px;
+      background: rgba(255,255,255,.16);
+      border:1px solid rgba(255,255,255,.22);
+    }
+    .fileMini span{
+      font-weight:900;
+      color:#fff;
+      white-space:nowrap;
+    }
+    .fileMini input{
+      max-width: 260px;
+      color:#fff;
+    }
+    .heroAnalyse{
+      padding:12px 16px;
+      border-radius:999px;
+      border:0;
+      font-weight:900;
+      cursor:pointer;
+      background:#0b1220;
+      color:#fff;
+      min-width: 150px;
+    }
+    .heroAnalyse:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+    }
+    .heroClear{
+      padding:12px 14px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.28);
+      background: rgba(255,255,255,.12);
+      color:#fff;
+      font-weight:900;
+      cursor:pointer;
+    }
+    .heroStatus{
+      color:#fff;
+      opacity:.95;
+      font-weight:800;
+    }
+
+    /* NEW: make logo smaller on this page */
+    .topBar .logo { width: 34px; height: 34px; }
   </style>
 </head>
+
 <body>
 
   <header class="topBar">
@@ -54,13 +113,14 @@
         <div>
           <div class="brandName">B Statement Check</div>
           <div class="brandTag">Simple fintech tools</div>
+
+          <!-- Small nice buttons -->
+          <nav class="topNav">
+            <a class="navBtn" href="./index.html">Bank Statement Check</a>
+            <a class="navBtn active" href="./supplier-price-watch.html">Supplier Price Watch</a>
+          </nav>
         </div>
       </div>
-
-      <nav class="navLinks">
-        <a class="navLink" href="./index.html">Bank Statement Check</a>
-        <a class="navLink active" href="./supplier-price-watch.html">Supplier Price Watch</a>
-      </nav>
     </div>
   </header>
 
@@ -73,31 +133,25 @@
         and alert you next time if prices go up — in simple English.
       </p>
 
-      <div class="noteBox">
-        <strong>Works like this:</strong> Upload → Analyse → Save → Next upload → Alert.
+      <!-- REPLACED: removed "Works like this..." text, and put upload + analyse here -->
+      <div class="heroActions">
+        <label class="fileMini">
+          <span>Upload invoice</span>
+          <input id="invoiceFile" type="file" accept=".pdf,image/*" />
+        </label>
+
+        <button id="analyseBtn" class="heroAnalyse" disabled>Analyse</button>
+
+        <button id="clearAllBtn" class="heroClear" type="button">Clear history</button>
+
+        <div id="status" class="heroStatus"></div>
       </div>
     </section>
 
     <section class="spwGrid">
-      <!-- Upload + Input -->
+
+      <!-- LEFT: input + items -->
       <div class="spwCard">
-        <div class="spwRow" style="justify-content: space-between;">
-          <div>
-            <div class="tag">Upload invoice</div>
-            <div class="muted" style="margin-top:6px;">PDF or photo. Instant result. Saved for next time.</div>
-          </div>
-          <button id="clearAllBtn" class="spwBtn ghost" title="Clear saved history">Clear history</button>
-        </div>
-
-        <div class="hr"></div>
-
-        <div class="spwRow">
-          <input id="invoiceFile" type="file" accept="application/pdf,image/*" />
-          <button id="analyseBtn" class="spwBtn primary" disabled>Analyse</button>
-          <span id="status" class="spwSmall"></span>
-        </div>
-
-        <div class="hr"></div>
 
         <div class="tag">If your invoice text can’t be read, enter basics (still fast)</div>
 
@@ -141,8 +195,8 @@
         </div>
 
         <div class="spwRow" style="margin-top: 10px;">
-          <button id="addItemBtn" class="spwBtn ghost">Add item</button>
-          <button id="clearItemsBtn" class="spwBtn ghost">Clear items</button>
+          <button id="addItemBtn" class="spwBtn ghost" type="button">Add item</button>
+          <button id="clearItemsBtn" class="spwBtn ghost" type="button">Clear items</button>
           <span class="spwSmall">Tip: add your top 5–15 lines first.</span>
         </div>
 
@@ -164,20 +218,17 @@
         </div>
       </div>
 
-      <!-- Results -->
+      <!-- RIGHT: results -->
       <div class="spwCard">
         <div class="tag">Results</div>
 
         <div id="resultsEmpty" class="muted" style="margin-top:10px;">
-          Upload an invoice and click <strong>Analyse</strong> to see your cost breakdown and any alerts.
+          Add supplier + items, then click <strong>Analyse</strong> to see results and any alerts.
         </div>
 
+        <!-- IMPORTANT: only one element with id="results" -->
         <div id="results" class="hidden">
           <div class="hr"></div>
-          <div id="results" class="resultsCard">
-  <p class="muted">Upload an invoice and click Analyse to see results.</p>
-</div>
-
 
           <div class="spwRow" style="justify-content: space-between;">
             <div>
@@ -222,7 +273,6 @@
 
           <div style="font-weight: 900; margin-bottom: 6px;">What to focus on</div>
           <div class="muted" id="focusText"></div>
-
         </div>
       </div>
     </section>
@@ -235,6 +285,6 @@
 
   </main>
 
-  <script src="./supplier-price-watch.js"></script>
+  <!-- IMPORTANT: removed the duplicate script include at the bottom -->
 </body>
 </html>
