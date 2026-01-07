@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>B Statement Check</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+
+<body>
+  <header class="topbar">
+    <a class="brand" href="./index.html" aria-label="B Statement Check Home">
+      <img class="brandLogo" src="./assets/logo.png" alt="B Statement Check logo" />
+      <div class="brandText">
+        <div class="brandName">B Statement Check</div>
+        <div class="brandTag">Document pre-check</div>
+      </div>
+    </a>
+  </header>
+
+  <main class="page">
+    <!-- HERO (blue only here) -->
+    <section class="hero">
+      <div class="heroInner">
+        <h1>Pre-check bank statements in seconds</h1>
+        <p class="heroSub">Upload a PDF. Get a risk indicator and clear flags to review.</p>
+
+        <div class="uploadCard">
+          <div class="uploadRow">
+            <label class="filePill">
+              <input id="pdfInput" type="file" accept="application/pdf" />
+              <span class="fileBtn">Choose PDF</span>
+              <span id="fileName" class="fileName">No file selected</span>
+            </label>
+
+            <button id="analyzeBtn" class="btn primary" disabled>Run pre-check</button>
+          </div>
+
+          <div class="uploadHint">Best results with original PDF exports (not screenshots).</div>
+        </div>
+
+        <div class="disclaimerCard">
+          <strong>Important:</strong> This tool provides a <strong>document risk indicator</strong> only.
+          It <strong> does <strong>not</strong> detect fraud, and must <strong>not</strong>
+          be used as the sole basis for lending, onboarding, or compliance decisions.
+        </div>
+
+        <div id="status" class="status" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <!-- RESULTS (fintech dashboard style) -->
+    <section id="resultsSection" class="resultsWrap hidden">
+      <div class="resultsInner">
+        <div class="resultsTop">
+          <div class="donePill">Done</div>
+        </div>
+        <div class="resultCard">
+  <div class="cardLabel">AI DOCUMENT</div>
+  <div id="aiStatus" class="aiStatus neutral">Checking…</div>
+  <div id="aiNote" class="aiNote">—</div>
+</div>
+
+
+        <div class="cards3">
+          <!-- OUTCOME -->
+          <div class="dashCard">
+            <div class="cardHeaderRow">
+              <div class="kicker">Pre-check outcome</div>
+              <span id="riskPill" class="riskPill">—</span>
+            </div>
+
+            <div id="outcomeTitle" class="bigOutcome">—</div>
+
+            <div class="chipRow">
+              <span class="chip">Risk indicator (not a decision)</span>
+              <span class="chip">Explainable flags</span>
+            </div>
+          </div>
+
+          <!-- BANK -->
+          <div class="dashCard">
+            <div class="kicker">Detected bank</div>
+            <div id="bankText" class="bankBig">—</div>
+            <div class="mutedLine">Based on branding + document signals</div>
+          </div>
+
+          <!-- CONFIDENCE -->
+          <div class="dashCard">
+            <div class="kicker">Confidence</div>
+
+            <div class="confRow">
+              <div class="donut" id="donut" style="--pct:0;">
+                <div class="donutInner">
+                  <div id="confPct" class="donutPct">0%</div>
+                  <div class="donutSub">signal strength</div>
+                </div>
+              </div>
+
+              <div class="confRight">
+                <div class="barTrack">
+                  <div id="confBar" class="barFill" style="width:0%"></div>
+                </div>
+                <div class="confHint">Higher confidence = clearer matching signals</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- FLAGS -->
+        <div class="dashCard flagsCard">
+          <div class="kicker">Flags to review</div>
+          <ul id="reasons" class="flagsList"></ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- TRUSTED BY -->
+    <section class="section">
+      <div class="sectionTitle">Trusted by fintech and mortgage lenders</div>
+      <div class="logosRow">
+        <div class="logoChip">Fintech Ops</div>
+        <div class="logoChip">Mortgage Brokerages</div>
+        <div class="logoChip">Credit Teams</div>
+        <div class="logoChip">Fraud &amp; Compliance</div>
+        <div class="logoChip">Underwriting</div>
+      </div>
+    </section>
+
+    <!-- SUPERPOWERS -->
+    <section class="section">
+      <h2 class="h2">Give your team superpowers</h2>
+      <p class="sub2">Automate tedious, manual review and enable your team to do what they do best.</p>
+
+      <div class="featureGrid">
+        <div class="featureCard">
+          <div class="pill">Automated pre-check</div>
+          <h3>Faster document triage</h3>
+          <p>Surface anomalies (metadata, layout, branding, extraction gaps) so teams know what to review first.</p>
+
+          <div class="miniList">
+            <div class="miniItem"><span class="miniTag ok">Low risk</span> Consistent structure + branding</div>
+            <div class="miniItem"><span class="miniTag warn">Review</span> Missing tables / unusual formatting</div>
+          </div>
+        </div>
+
+        <div class="featureCard">
+          <div class="pill">Explainable results</div>
+          <h3>Clear flags, not black-box scores</h3>
+          <p>Every indicator includes “why” — so ops, advisers, and compliance can justify next steps.</p>
+
+          <div class="mockReport">
+            <div class="mockTitle">Example output</div>
+            <div class="mockLine"></div>
+            <div class="mockLine short"></div>
+            <div class="mockLine"></div>
+            <div class="mockLine short"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section class="how-it-works">
+  <h2>How it works</h2>
+
+  <div class="how-steps">
+    <div class="how-card">
+      <div class="step-dot">1</div>
+      <h3>Upload</h3>
+      <p>Upload a bank statement PDF (original export recommended).</p>
+    </div>
+
+    <div class="how-card">
+      <div class="step-dot">2</div>
+      <h3>Analyze</h3>
+      <p>Basic checks across metadata, layout, branding, and extraction quality.</p>
+    </div>
+
+    <div class="how-card">
+      <div class="step-dot">3</div>
+      <h3>Review</h3>
+      <p>You get a risk indicator + reasons, so your team decides the next step.</p>
+    </div>
+  </div>
+</section>
+
+
+    <footer class="footer">
+      <div class="footerInner">
+        <div>© <span id="year"></span> B Statement Check</div>
+        <div class="footerNote">Not financial advice • Not a regulated decision engine</div>
+      </div>
+    </footer>
+  </main>
+
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+    // Keep production default to Railway. You can override in dev by setting window.API_BASE before app.js
+    window.API_BASE = window.API_BASE || "https://b-statement-live-production.up.railway.app";
+  </script>
+  <script src="./app.js"></script>
+</body>
+</html>
