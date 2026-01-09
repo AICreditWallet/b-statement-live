@@ -4,28 +4,72 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Login • Supplier Price Watch</title>
+
   <link rel="stylesheet" href="./styles.css">
+
   <style>
-    .wrap { max-width: 520px; margin: 0 auto; padding: 28px 18px; }
-    .card { background:#fff; border:1px solid rgba(0,0,0,.08); border-radius:16px; padding:18px; box-shadow:0 12px 40px rgba(0,0,0,.06); }
-    .row { display:flex; flex-direction:column; gap:6px; margin:12px 0; }
-    label { font-weight:900; font-size:13px; }
-    input { padding:12px; border-radius:12px; border:1px solid rgba(0,0,0,.12); font-size:14px; }
-    .btn { width:100%; padding:12px 14px; border-radius:999px; border:0; cursor:pointer; font-weight:1000; background:#0b1220; color:#fff; font-size:14px; }
-    .muted { color: rgba(0,0,0,.62); font-size: 13px; }
-    .top { display:flex; gap:12px; align-items:center; margin-bottom:14px; }
+    body { background: #f6f7fb; }
+    .wrap { max-width: 520px; margin: 0 auto; padding: 34px 18px; }
+
+    .top {
+      display:flex;
+      align-items:center;
+      gap:12px;
+      margin-bottom: 14px;
+    }
     .logo { width:34px; height:34px; border-radius:10px; }
-    a { color:#0b1220; font-weight:900; text-decoration:none; }
-    #msg { margin-top:10px; font-size:13px; }
+    .appName { font-size: 15px; color: rgba(0,0,0,.75); margin: 0; }
+    .pageTitle { font-size: 22px; margin: 2px 0 0; color: #0b1220; }
+    .subtitle { font-size: 13px; color: rgba(0,0,0,.6); margin: 6px 0 0; }
+
+    .card {
+      background:#fff;
+      border: 1px solid rgba(0,0,0,.08);
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.06);
+    }
+
+    .row { display:flex; flex-direction:column; gap:6px; margin: 12px 0; }
+    label { font-size: 13px; color: rgba(0,0,0,.7); }
+    input {
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(0,0,0,.12);
+      font-size: 14px;
+      background: #fff;
+      outline: none;
+    }
+    input:focus { border-color: rgba(73,120,255,.55); box-shadow: 0 0 0 4px rgba(73,120,255,.12); }
+
+    .btn {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 999px;
+      border: 0;
+      cursor: pointer;
+      font-size: 14px;
+      background: #0b1220;
+      color: #fff;
+    }
+
+    .muted { color: rgba(0,0,0,.6); font-size: 13px; }
+    .links { margin-top: 12px; display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+    a { color: rgba(11,18,32,.9); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    #msg { margin-top: 10px; font-size: 13px; color: rgba(155,0,0,.9); min-height: 18px; }
   </style>
 </head>
+
 <body>
   <main class="wrap">
     <div class="top">
-      <img class="logo" src="./assets/logo.png" alt="B" />
+      <img class="logo" src="./assets/logo.png" alt="Logo" />
       <div>
-        <div style="font-weight:1000;">Login</div>
-        <div class="muted">Access Supplier Price Watch</div>
+        <p class="appName">Supplier Price Watch</p>
+        <h1 class="pageTitle">Login</h1>
+        <p class="subtitle">Sign in to access your dashboard.</p>
       </div>
     </div>
 
@@ -42,14 +86,11 @@
         </div>
 
         <button class="btn" type="submit">Login</button>
-        <div id="msg" class="muted"></div>
+        <div id="msg"></div>
 
-        <div style="margin-top:12px;" class="muted">
-          No account? <a href="./register.html">Create one</a>
-        </div>
-
-        <div style="margin-top:10px;" class="muted">
-          <a href="./index.html">← Back to app</a>
+        <div class="links muted">
+          <span>New here? <a href="./register.html">Create an account</a></span>
+          <a href="./index.html">Back to home</a>
         </div>
       </form>
     </div>
@@ -58,8 +99,8 @@
   <script type="module">
     import { login, currentUser } from "./auth.js";
 
-    // If already logged in, go to app
-    if (currentUser()) window.location.href = "./index.html";
+    // Already logged in -> go to dashboard
+    if (currentUser()) window.location.href = "./dashboard.html";
 
     const form = document.getElementById("loginForm");
     const msg = document.getElementById("msg");
@@ -73,7 +114,7 @@
 
       try {
         await login({ email, password });
-        window.location.href = "./index.html";
+        window.location.href = "./dashboard.html";
       } catch (err) {
         msg.textContent = err?.message || "Login failed.";
       }

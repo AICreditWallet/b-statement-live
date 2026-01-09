@@ -95,3 +95,32 @@ export function currentUser() {
   const s = getSession();
   return s ? { name: s.name, email: s.email, userId: s.userId } : null;
 }
+// Add these to auth.js
+
+export function clearMyData(userId) {
+  if (!userId) return;
+  localStorage.removeItem(`spw_history_${userId}`);
+  localStorage.removeItem(`spw_invoices_${userId}`);
+}
+
+export async function deleteAccount() {
+  // Removes current account from this device + clears session + data
+  const session = (() => {
+    try { return JSON.parse(localStorage.getItem("spw_session_v1")) || null; } catch { return null; }
+  })();
+  if (!session?.userId) throw new Error("No logged-in user.");
+
+  const userId = session.userId;
+  const email = (session.email || "").toLowerCase();
+
+  // Remove user from users list
+  const USERS_KEY = "spw_users_v1";
+  let users = [];
+  try { users = JSON.parse(localStorage.getItem(USERS_KEY)) || []; } catch {}
+  users = users.filter(u => (u.email || "").toLowerCase() !== email);
+  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+
+  // Clear local data and session
+  clearMyData(userId);
+  localStorage.removeItem("spw_session_v1");
+}

@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dashboard • Supplier Price Watch</title>
+
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" defer src="./dashboard.js"></script>
+
+  <style>
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 22px 18px 70px; }
+
+    .topBar {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      padding:14px 18px;
+      border-bottom:1px solid rgba(0,0,0,.08);
+      background:#fff;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .brandLeft{ display:flex; align-items:center; gap:12px; }
+    .logo{ width:34px; height:34px; border-radius:10px; }
+    .title{ font-weight:1000; font-size:16px; }
+    .subtitle{ font-size:12px; color:rgba(0,0,0,.6); margin-top:2px; }
+
+    .actions{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .btn {
+      border:0;
+      border-radius:999px;
+      padding:10px 12px;
+      font-weight:1000;
+      cursor:pointer;
+      font-size:13px;
+      line-height:1;
+      background:#0b1220;
+      color:#fff;
+    }
+    .btn.secondary {
+      background:#fff;
+      color:#0b1220;
+      border:1px solid rgba(0,0,0,.12);
+    }
+    .btn.danger {
+      background:#fff;
+      color:#9b0000;
+      border:1px solid rgba(155,0,0,.25);
+    }
+    .btn:disabled{ opacity:.55; cursor:not-allowed; }
+
+    .card{
+      margin-top:16px;
+      background:#fff;
+      border-radius:18px;
+      box-shadow:0 12px 40px rgba(0,0,0,.08);
+      padding:16px;
+      border:1px solid rgba(0,0,0,.06);
+    }
+
+    .hero{
+      margin-top:18px;
+      padding:18px;
+      border-radius:18px;
+      background: linear-gradient(180deg, rgba(73,120,255,.92), rgba(73,120,255,.80));
+      color:#fff;
+      box-shadow:0 20px 60px rgba(0,0,0,.10);
+    }
+    .hero h1{ margin:0 0 8px; font-size: clamp(22px, 3vw, 32px); }
+    .hero p{ margin:0; opacity:.95; font-size:14px; }
+
+    .uploadRow{
+      margin-top:12px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      background: rgba(255,255,255,.14);
+      border: 1px solid rgba(255,255,255,.22);
+      border-radius: 14px;
+      padding: 12px;
+    }
+    input[type="file"]{
+      background: rgba(255,255,255,.92);
+      border-radius: 10px;
+      padding: 8px;
+      border: 0;
+      max-width: 100%;
+    }
+    .small{ font-size:12px; opacity:.92; }
+
+    #status{ margin-top:10px; font-size:13px; opacity:.95; min-height:18px; }
+
+    table{ width:100%; border-collapse:collapse; margin-top:10px; }
+    th, td{ padding:10px 8px; border-bottom:1px solid rgba(0,0,0,.08); font-size:13px; text-align:left; }
+    th{ color:rgba(0,0,0,.65); font-weight:1000; }
+
+    .muted{ color: rgba(0,0,0,.62); font-size: 13px; }
+    .grid2{ display:grid; grid-template-columns: 1.1fr .9fr; gap:16px; }
+    @media(max-width: 980px){ .grid2{ grid-template-columns: 1fr; } }
+
+    /* Modal */
+    .modalOverlay{
+      position: fixed; inset:0;
+      background: rgba(0,0,0,.5);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding: 18px;
+      z-index: 50;
+    }
+    .modal{
+      width:min(560px, 100%);
+      background:#fff;
+      border-radius:18px;
+      padding:16px;
+      border:1px solid rgba(0,0,0,.10);
+      box-shadow:0 30px 100px rgba(0,0,0,.30);
+    }
+    .modalHeader{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    .modalTitle{ font-weight:1000; font-size:16px; }
+    .row{ display:flex; justify-content:space-between; gap:10px; align-items:center; flex-wrap:wrap; }
+    .hr{ height:1px; background: rgba(0,0,0,.08); margin: 12px 0; }
+  </style>
+</head>
+
+<body>
+  <header class="topBar">
+    <div class="brandLeft">
+      <img class="logo" src="./assets/logo.png" alt="B" />
+      <div>
+        <div class="title">Dashboard</div>
+        <div class="subtitle" id="userLine">—</div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button id="settingsBtn" class="btn secondary">Settings</button>
+      <button id="logoutBtn" class="btn">Logout</button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <h1>Upload invoices & receipts</h1>
+      <p>Select up to 10 files (PDF / images). This MVP stores everything on this device.</p>
+
+      <div class="uploadRow">
+        <input id="filesInput" type="file" accept="application/pdf,image/*" multiple />
+        <button id="analyseAllBtn" class="btn" disabled>Analyse uploads</button>
+        <span class="small" id="countText">0 / 10 selected</span>
+      </div>
+
+      <div id="status"></div>
+    </section>
+
+    <section class="grid2">
+      <div class="card">
+        <div style="font-weight:1000; font-size:16px;">Uploads (this account)</div>
+        <div class="muted">Newest first. Demo totals until OCR backend returns real totals.</div>
+
+        <table id="invoicesTable">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Supplier</th>
+              <th>File</th>
+              <th>Total</th>
+              <th>Change</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+
+        <div class="muted" style="margin-top:10px;">
+          Tip: if backend is still localhost, live site will use demo mode.
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="font-weight:1000; font-size:16px;">Supplier leaderboard</div>
+        <div class="muted">Total spend per supplier (this account).</div>
+
+        <table id="leaderTable">
+          <thead>
+            <tr>
+              <th>Supplier</th>
+              <th>Total spend</th>
+              <th>Last invoice</th>
+              <th>Last change</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+
+        <div class="hr"></div>
+
+        <div style="font-weight:1000; margin-bottom:6px;">Focus</div>
+        <div class="muted" id="focusText">—</div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Settings modal -->
+  <div id="modalOverlay" class="modalOverlay">
+    <div class="modal">
+      <div class="modalHeader">
+        <div class="modalTitle">Settings</div>
+        <button id="closeModalBtn" class="btn secondary">Close</button>
+      </div>
+
+      <div class="row">
+        <div>
+          <div style="font-weight:1000;" id="settingsName">—</div>
+          <div class="muted" id="settingsEmail">—</div>
+        </div>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="row">
+        <div>
+          <div style="font-weight:1000;">Data</div>
+          <div class="muted">Clear invoices + history for this account on this device.</div>
+        </div>
+        <button id="clearDataBtn" class="btn secondary">Clear my data</button>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="row">
+        <div>
+          <div style="font-weight:1000; color:#9b0000;">Delete account</div>
+          <div class="muted">Removes this account from this device. Irreversible.</div>
+        </div>
+        <button id="deleteAccountBtn" class="btn danger">Delete account</button>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="row">
+        <div>
+          <div style="font-weight:1000;">Logout</div>
+          <div class="muted">End your session on this device.</div>
+        </div>
+        <button id="logoutBtn2" class="btn">Logout</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
