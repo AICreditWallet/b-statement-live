@@ -1,11 +1,11 @@
 console.log("Supplier Price Watch JS loaded");
 
 // ================= CONFIG =================
-// If you have a deployed backend later, put it here.
-// Example: "https://your-railway-service.up.railway.app/analyse"
 const BACKEND_URL = "http://127.0.0.1:8000/analyse";
-const STORAGE_KEY = "spw_history_v3";
 const REQUEST_TIMEOUT_MS = 12000;
+
+// Session storage key (must match auth.js)
+const SESSION_KEY = "spw_session_v1";
 
 // ================= DOM (safe lookups) =================
 const $ = (id) => document.getElementById(id);
@@ -28,6 +28,40 @@ const kpiBiggest = $("kpiBiggest");
 const leaderTableBody = document.querySelector("#leaderTable tbody");
 const focusText = $("focusText");
 
+// ================= AUTH (MVP) =================
+function getSessionUser() {
+  try {
+    return JSON.parse(localStorage.getItem(SESSION_KEY)) || null;
+  } catch {
+    return null;
+  }
+}
+
+function requireLoginOrLockUI() {
+  const user = getSessionUser();
+  if (user) return user;
+
+  // Lock UI
+  if (invoiceFile) invoiceFile.disabled = true;
+  if (analyseBtn) analyseBtn.disabled = true;
+
+  hideResults();
+  hidePill();
+  renderLeaderboard({ suppliers: {} });
+
+  setStatus("Please login to analyse invoices.");
+  if (focusText) {
+    focusText.textContent = "Login required. Use the Login/Create account buttons at the top.";
+  }
+
+  return null;
+}
+
+// Per-user storage key
+function storageKeyForUser(user) {
+  return user?.userId ? `spw_history_${user.userId}` : "spw_history_guest";
+}
+
 // ================= HELPERS =================
 function setStatus(msg) {
   if (!statusEl) return;
@@ -41,9 +75,7 @@ function money(n, currency = "£") {
 }
 
 function titleCase(s) {
-  return (s || "")
-    .toLowerCase()
-    .replace(/\b\w/g, (m) => m.toUpperCase());
+  return (s || "").toLowerCase().replace(/\b\w/g, (m) => m.toUpperCase());
 }
 
 function inferSupplierFromFilename(filename) {
@@ -54,7 +86,6 @@ function inferSupplierFromFilename(filename) {
     .trim();
 
   if (!base) return "Unknown Supplier";
-  // Keep it short: first 3 words
   return titleCase(base.split(" ").slice(0, 3).join(" "));
 }
 
@@ -74,27 +105,25 @@ function nowIsoDate() {
 }
 
 // ================= STORAGE =================
-function loadHistory() {
+function loadHistory(storageKey) {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey);
     const parsed = raw ? JSON.parse(raw) : null;
     if (parsed && typeof parsed === "object") return parsed;
   } catch {}
   return { suppliers: {} };
 }
 
-function saveHistory(h) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(h));
+function saveHistory(storageKey, h) {
+  localStorage.setItem(storageKey, JSON.stringify(h));
 }
 
 // ================= UI =================
 function setPill(level, text) {
   if (!alertPill) return;
-
-  // Your new HTML doesn't have pill CSS, but we still set classes if you add them later.
   alertPill.classList.remove("hidden");
   alertPill.className = ""; // wipe
-  alertPill.classList.add(level); // "good" | "warn" | "bad" (optional)
+  alertPill.classList.add(level); // optional class (good/warn/bad)
   alertPill.textContent = text || "";
 }
 
@@ -118,13 +147,13 @@ function renderLeaderboard(history, currency = "£") {
   if (!leaderTableBody) return;
 
   leaderTableBody.innerHTML = "";
-
   const suppliers = Object.values(history.suppliers || {}).sort(
     (a, b) => (b.totalSpend || 0) - (a.totalSpend || 0)
   );
 
   if (!suppliers.length) {
-    leaderTableBody.innerHTML = `<tr><td colspan="4" style="color:rgba(0,0,0,.6)">No history yet</td></tr>`;
+    leaderTableBody.innerHTML =
+      `<tr><td colspan="4" style="color:rgba(0,0,0,.6)">No history yet</td></tr>`;
     return;
   }
 
@@ -164,27 +193,20 @@ function updateAnalyseEnabled() {
   analyseBtn.disabled = !invoiceFile.files?.[0];
 }
 
-// ================= BACKEND CALL (optional) =================
+// ================= BACKEND CALL =================
 async function fetchWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
   const controller = new AbortController();
   const t = setTimeout(() => controller.abort(), timeoutMs);
-
   try {
-    const res = await fetch(url, { ...options, signal: controller.signal });
-    return res;
+    return await fetch(url, { ...options, signal: controller.signal });
   } finally {
     clearTimeout(t);
   }
 }
 
-/**
- * Try to extract a real total from backend response.
- * You can adjust this once your backend returns actual fields.
- */
 function pickTotalFromBackendJSON(data) {
   if (!data || typeof data !== "object") return null;
 
-  // Common candidates
   const candidates = [
     data.total,
     data.invoice_total,
@@ -197,23 +219,17 @@ function pickTotalFromBackendJSON(data) {
     const n = Number(c);
     if (Number.isFinite(n) && n > 0) return n;
   }
-
   return null;
 }
 
-/**
- * Fallback demo total (deterministic)
- * This is intentionally honest: it's fake.
- */
 function demoTotalFromFile(file) {
   const size = Number(file?.size || 0);
-  // Example: 48,940 bytes => ~489.40
-  const total = Math.max(1, Math.round(size / 100) / 1);
-  return total;
+  // Simple deterministic estimate
+  return Math.max(1, Math.round(size / 100));
 }
 
 // ================= MAIN FLOW =================
-async function analyseInvoice() {
+async function analyseInvoice(storageKey) {
   const f = invoiceFile?.files?.[0];
   if (!f) return;
 
@@ -223,11 +239,11 @@ async function analyseInvoice() {
   setStatus(`Selected: ${f.name}`);
   setPill("warn", "Analysing…");
 
-  // Try backend first (if configured)
   let usedBackend = false;
   let backendMeta = "";
   let total = null;
 
+  // Try backend first
   if (BACKEND_URL && BACKEND_URL.startsWith("http")) {
     try {
       setStatus("Uploading to backend…");
@@ -240,9 +256,7 @@ async function analyseInvoice() {
         body: formData
       });
 
-      if (!res.ok) {
-        throw new Error(`Backend error ${res.status}`);
-      }
+      if (!res.ok) throw new Error(`Backend error ${res.status}`);
 
       const data = await res.json();
       console.log("Backend response:", data);
@@ -250,7 +264,6 @@ async function analyseInvoice() {
       total = pickTotalFromBackendJSON(data);
       backendMeta = data?.filename ? `Backend • ${data.filename}` : "Backend connected";
 
-      // If backend didn't return a usable total yet, we still fall back.
       if (total == null) {
         total = demoTotalFromFile(f);
         backendMeta = "Backend connected (no total yet) • using demo estimate";
@@ -263,14 +276,14 @@ async function analyseInvoice() {
     }
   }
 
-  // If backend not used, do demo
+  // Fallback demo
   if (!usedBackend) {
     total = demoTotalFromFile(f);
     backendMeta = "Demo estimate (backend not connected)";
   }
 
-  // Update + persist history
-  const history = loadHistory();
+  // Update history
+  const history = loadHistory(storageKey);
   history.suppliers ||= {};
 
   const prev = history.suppliers[key];
@@ -286,7 +299,7 @@ async function analyseInvoice() {
     lastDate: nowIsoDate()
   };
 
-  saveHistory(history);
+  saveHistory(storageKey, history);
 
   // Render UI
   showResults();
@@ -299,20 +312,14 @@ async function analyseInvoice() {
   if (kpiBiggest) kpiBiggest.textContent = findBiggestSupplier(history);
 
   if (focusText) {
-    if (usedBackend) {
-      focusText.textContent =
-        "Backend received the file. Next step: return a real invoice total from OCR and use that instead of the demo estimate.";
-    } else {
-      focusText.textContent =
-        "This is still using a demo estimate. If you want real totals, you need a live backend OCR endpoint and set BACKEND_URL to it.";
-    }
+    focusText.textContent = usedBackend
+      ? "Backend received the file. Next step: OCR must return the real invoice total."
+      : "Demo mode. To get real totals, deploy your backend and update BACKEND_URL.";
   }
 
   renderLeaderboard(history);
 
-  if (usedBackend) setPill("good", "Done ✅");
-  else setPill("warn", "Done (demo)");
-
+  setPill(usedBackend ? "good" : "warn", usedBackend ? "Done ✅" : "Done (demo)");
   setStatus("Analysis complete.");
 }
 
@@ -328,7 +335,16 @@ if (invoiceFile) {
 
 if (analyseBtn) {
   analyseBtn.addEventListener("click", () => {
-    analyseInvoice().catch((err) => {
+    const user = getSessionUser();
+    if (!user) {
+      setStatus("Please login first.");
+      setPill("bad", "Login required");
+      return;
+    }
+
+    const storageKey = storageKeyForUser(user);
+
+    analyseInvoice(storageKey).catch((err) => {
       console.error(err);
       setPill("bad", "Error");
       setStatus(err?.message || "Something went wrong");
@@ -338,16 +354,24 @@ if (analyseBtn) {
 
 // ================= INIT =================
 (function init() {
+  // Require login and lock UI if not logged in
+  const user = requireLoginOrLockUI();
+  if (!user) return;
+
+  // Logged in: enable upload
+  if (invoiceFile) invoiceFile.disabled = false;
+
+  const storageKey = storageKeyForUser(user);
+
   updateAnalyseEnabled();
 
-  const history = loadHistory();
+  const history = loadHistory(storageKey);
   renderLeaderboard(history);
 
-  // If there is any history, keep Results hidden until a new analyse
   hideResults();
   hidePill();
 
-  // Honest boot message
+  // Honest backend note
   const onLocalhost = ["localhost", "127.0.0.1"].includes(window.location.hostname);
   if (!onLocalhost && BACKEND_URL.includes("127.0.0.1")) {
     console.warn("BACKEND_URL points to localhost but site is not localhost. Backend calls will fail.");
