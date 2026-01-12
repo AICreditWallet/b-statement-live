@@ -1,495 +1,294 @@
+import os
 import re
-from enum import Enum
-from typing import List, Tuple, Dict, Optional, Any
 from io import BytesIO
+from typing import Any, Dict, List, Optional, Tuple
 
-import pdfplumber
+import boto3
+from botocore.exceptions import BotoCoreError, ClientError
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from PyPDF2 import PdfReader
+from PIL import Image
 
-app = FastAPI(title="B Statement Check API")
 
-# In production: keep only your deployed frontend domain.
-# For local dev you can temporarily add "http://localhost:3000" etc.
+# -------------------------
+# App + CORS
+# -------------------------
+app = FastAPI(title="Supplier Price Watch API")
+
+# For dev: allow all. In production you can lock this to your Vercel domain.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://b-statement-live.vercel.app"],
+    allow_origins=["*"],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
-class Verdict(str, Enum):
-    likely_genuine = "likely_genuine"
-    suspicious = "suspicious"
-    likely_fake = "likely_fake"
+# -------------------------
+# Constants
+# -------------------------
+MAX_SYNC_BYTES = 5 * 1024 * 1024  # Textract synchronous APIs: keep it small & safe
+SUPPORTED_EXTS = {".pdf", ".png", ".jpg", ".jpeg", ".heic", ".heif"}
 
 
+# -------------------------
+# Health
+# -------------------------
 @app.get("/health")
 def health():
     return {"status": "ok"}
 
 
+# -------------------------
+# Main endpoint (keep both spellings)
+# -------------------------
+@app.post("/analyse")
+async def analyse(file: UploadFile = File(...)):
+    return await _analyse_impl(file)
+
+
 @app.post("/analyze")
-async def analyze_statement(file: UploadFile = File(...)):
-    if file.content_type != "application/pdf":
-        raise HTTPException(status_code=400, detail="Only PDF files are supported.")
-
-    file_bytes = await file.read()
-    if len(file_bytes) > 10 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="File too large (max 10 MB).")
-
-    try:
-        verdict, confidence, reasons, detected_bank, sections, ai_info = run_basic_checks(file_bytes)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Analysis error: {e}")
-
-    # Keep old keys so frontend won't break + extra keys for new UI
-    return {
-        "verdict": verdict,
-        "confidence": confidence,
-        "reasons": reasons,
-        "bank": detected_bank,
-        "sections": sections,
-        "ai_generated": ai_info,
-    }
+async def analyze(file: UploadFile = File(...)):
+    # Alias so you don't break older frontend calls
+    return await _analyse_impl(file)
 
 
-def run_basic_checks(
-    file_bytes: bytes
-) -> Tuple[str, float, List[str], str, Dict[str, List[str]], Dict[str, Any]]:
-    reasons: List[str] = []
-    score = 1.0
-    detected_bank = "unknown"
+async def _analyse_impl(file: UploadFile) -> Dict[str, Any]:
+    filename = (file.filename or "").strip()
+    if not filename:
+        raise HTTPException(status_code=400, detail="Missing filename.")
 
-    # Grouped flags for UI (you can render these in separate cards later)
-    sections: Dict[str, List[str]] = {
-        "integrity": [],
-        "branding": [],
-        "layout": [],
-        "transactions": [],
-        "ai": [],
-    }
-
-    # --- Read PDF (PyPDF2)
-    pdf = PdfReader(BytesIO(file_bytes))
-    num_pages = len(pdf.pages)
-    if num_pages == 0:
-        raise ValueError("Empty PDF")
-
-    # -------------------------
-    # STRUCTURAL CHECKS
-    # -------------------------
-    if num_pages > 12:
-        score -= 0.15
-        msg = f"Unusual page count: {num_pages} pages."
-        reasons.append(msg)
-        sections["layout"].append(msg)
-    elif num_pages > 8:
-        score -= 0.08
-        msg = f"High page count: {num_pages} pages."
-        reasons.append(msg)
-        sections["layout"].append(msg)
-
-    # -------------------------
-    # METADATA CHECKS (REWEIGHTED)
-    # -------------------------
-    meta = pdf.metadata or {}
-    producer = (getattr(meta, "producer", "") or meta.get("/Producer", "") or "").strip()
-    creator = (getattr(meta, "creator", "") or meta.get("/Creator", "") or "").strip()
-    lower_meta = (producer + " " + creator).lower().strip()
-
-    # AI / synthetic signals (metadata-only, weak evidence)
-    ai_level, ai_reasons = ai_generation_signals(lower_meta)
-    ai_info = {
-        "level": ai_level,  # "none" | "possible" | "strong"
-        "summary": ai_reasons or ["No strong AI/synthetic indicators found in PDF metadata."],
-        "note": "This is metadata-based only (not a guarantee).",
-    }
-    sections["ai"].extend(ai_info["summary"])
-    reasons.extend(ai_info["summary"])
-
-    # Strong edit tools (these are meaningful signals)
-    high_risk_editors = [
-        "microsoft word", "powerpoint", "excel", "libreoffice", "openoffice",
-        "photoshop", "indesign", "canva", "figma", "nitro", "foxit",
-        "phantompdf", "pdf-xchange", "pdf editor", "smallpdf", "ilovepdf",
-        "sejda", "pdfelement", "wondershare",
-    ]
-
-    # Medium tools = possible post-processing
-    medium_risk_tools = [
-        "pdfcreator", "cutepdf", "primopdf", "pdf printer",
-        "google docs", "google drive", "camscanner", "scanner",
-    ]
-
-    # Often normal for app exports / system generated PDFs
-    banklike_or_os = [
-        "pdfkit", "quartz", "ios", "mac os", "coregraphics", "skia", "pdfium",
-        "adobe", "chrome", "chromium",
-    ]
-
-    strong_edit_signal = False
-
-    if not lower_meta:
-        # Missing metadata is common for fintech exports → small penalty only
-        score -= 0.03
-        msg = "Metadata: minimal or missing (can be normal for app-generated statements)."
-        reasons.append(msg)
-        sections["integrity"].append(msg)
-    else:
-        if any(x in lower_meta for x in high_risk_editors):
-            score -= 0.55
-            strong_edit_signal = True
-            msg = f"Metadata: shows possible editing tool ('{producer or creator}')."
-            reasons.append(msg)
-            sections["integrity"].append(msg)
-        elif any(x in lower_meta for x in medium_risk_tools):
-            score -= 0.10
-            msg = f"Metadata: shows generic PDF tool ('{producer or creator}')."
-            reasons.append(msg)
-            sections["integrity"].append(msg)
-        elif any(x in lower_meta for x in banklike_or_os):
-            msg = f"Metadata: looks system-generated ('{producer or creator}')."
-            reasons.append(msg)
-            sections["integrity"].append(msg)
-        else:
-            # Unknown metadata should not push genuine PDFs into RED
-            score -= 0.03
-            msg = f"Metadata: unrecognised producer/creator ('{producer or creator}')."
-            reasons.append(msg)
-            sections["integrity"].append(msg)
-
-    # Apply AI penalties gently (metadata-only)
-    if ai_level == "strong":
-        score -= 0.20
-        msg = "AI indicator: strong metadata signal of automated generation."
-        reasons.append(msg)
-        sections["ai"].append(msg)
-    elif ai_level == "possible":
-        score -= 0.05
-        msg = "AI indicator: possible metadata signal (weak evidence)."
-        reasons.append(msg)
-        sections["ai"].append(msg)
-
-    # -------------------------
-    # EXTRACT TEXT (ALL PAGES)
-    # -------------------------
-    pages_text: List[str] = []
-    for page in pdf.pages:
-        pages_text.append(page.extract_text() or "")
-
-    first_text = pages_text[0] if pages_text else ""
-    first_lower = first_text.lower()
-
-    # -------------------------
-    # BANK BRANDING CHECK
-    # -------------------------
-    bank_tokens = {
-        "Lloyds": ["lloyds"],
-        "Barclays": ["barclays"],
-        "HSBC": ["hsbc"],
-        "NatWest": ["natwest"],
-        "RBS": ["royal bank of scotland", "rbs"],
-        "Halifax": ["halifax"],
-        "Santander": ["santander"],
-        "Nationwide": ["nationwide"],
-        "TSB": ["tsb"],
-        "Monzo": ["monzo"],
-        "Starling": ["starling"],
-        "Revolut": ["revolut"],
-        "Metro Bank": ["metro bank"],
-        "Virgin Money": ["virgin money"],
-    }
-
-    for bank_name, tokens in bank_tokens.items():
-        if any(t in first_lower for t in tokens):
-            detected_bank = bank_name
-            break
-
-    if detected_bank == "unknown":
-        score -= 0.06
-        msg = "Branding: bank name not matched to current list."
-        reasons.append(msg)
-        sections["branding"].append(msg)
-    else:
-        # small positive bump so genuine docs don't become red by default
-        score += 0.05
-        msg = f"Branding: detected '{detected_bank}' on page 1."
-        reasons.append(msg)
-        sections["branding"].append(msg)
-
-    # -------------------------
-    # SIMPLE CONTENT CHECK (SOFTER)
-    # -------------------------
-    if "balance" not in first_lower:
-        score -= 0.03
-        msg = "Content: 'balance' not found on page 1 (not always an issue)."
-        reasons.append(msg)
-        sections["layout"].append(msg)
-
-    # -------------------------
-    # LAYOUT CHECKS (WEAK SIGNAL)
-    # -------------------------
-    layout_warnings = layout_anomaly_check(pages_text)
-    if layout_warnings:
-        score -= 0.05
-        reasons.extend(layout_warnings)
-        sections["layout"].extend(layout_warnings)
-
-    # -------------------------
-    # TRANSACTION EXTRACTION + RUNNING BALANCE
-    # -------------------------
-    txs: List[Dict] = []
-    rb_warnings: List[str] = []
-
-    try:
-        txs = extract_transactions_pdfplumber(file_bytes)
-    except Exception as e:
-        msg = f"Transactions: parse error ({e})."
-        reasons.append(msg)
-        sections["transactions"].append(msg)
-        txs = []
-
-    if not txs:
-        # Not being able to extract tables is common → tiny penalty
-        score -= 0.02
-        msg = "Transactions: could not extract structured tables (common for some bank/app PDFs)."
-        reasons.append(msg)
-        sections["transactions"].append(msg)
-    else:
-        try:
-            rb_warnings = running_balance_check_rows(txs)
-        except Exception as e:
-            msg = f"Running balance check error: {e}"
-            reasons.append(msg)
-            sections["transactions"].append(msg)
-            rb_warnings = []
-
-        if rb_warnings:
-            score -= 0.30
-            reasons.extend(rb_warnings)
-            sections["transactions"].extend(rb_warnings)
-
-    # -------------------------
-    # NORMALISE SCORE
-    # -------------------------
-    score = max(0.05, min(score, 1.0))
-
-    # -------------------------
-    # VERDICT BUCKETS (UPDATED)
-    # -------------------------
-    if strong_edit_signal or score < 0.55:
-        verdict = Verdict.likely_fake
-        reasons.append(
-            "Overall: high risk signals found — recommend requesting an original statement directly from the bank."
+    ext = _ext_lower(filename)
+    if ext not in SUPPORTED_EXTS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported file type '{ext}'. Supported: PDF, PNG, JPG/JPEG, HEIC/HEIF.",
         )
-    elif score < 0.82:
-        verdict = Verdict.suspicious
-        reasons.append("Overall: some elements need review — recommend manual checks.")
-    else:
-        verdict = Verdict.likely_genuine
-        reasons.append("Overall: looks consistent with a bank-generated PDF (not proof of authenticity).")
 
-    return verdict.value, score, reasons, detected_bank, sections, ai_info
+    raw = await file.read()
+    if not raw:
+        raise HTTPException(status_code=400, detail="Empty file.")
+    if len(raw) > MAX_SYNC_BYTES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File too large for realtime extraction (max {MAX_SYNC_BYTES // (1024*1024)} MB).",
+        )
+
+    # Convert images to JPEG bytes for Textract (PDF can be sent as-is)
+    try:
+        document_bytes, normalized_type = _normalize_for_textract(raw, ext)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Could not process file: {e}")
+
+    # Call AWS Textract AnalyzeExpense
+    try:
+        textract = _textract_client()
+        resp = textract.analyze_expense(Document={"Bytes": document_bytes})
+    except (BotoCoreError, ClientError) as e:
+        raise HTTPException(
+            status_code=502,
+            detail=f"AWS Textract error: {str(e)}",
+        )
+
+    # Parse vendor/total/date/items
+    vendor, total, currency, date = _parse_summary_fields(resp)
+    items = _parse_line_items(resp)
+
+    return {
+        "filename": filename,
+        "input_type": normalized_type,  # "pdf" or "image/jpeg"
+        "vendor": vendor,
+        "total": total,
+        "currency": currency,
+        "date": date,
+        "items": items,
+        "items_count": len(items),
+        # You can remove this later, but it helps debugging now:
+        "debug": {
+            "has_expense_documents": bool(resp.get("ExpenseDocuments")),
+        },
+    }
 
 
-def layout_anomaly_check(pages_text: List[str]) -> List[str]:
-    warnings: List[str] = []
-    if not pages_text:
-        return warnings
-
-    num_pages = len(pages_text)
-
-    first = (pages_text[0] or "").lower()
-    header_tokens = ["account", "sort code", "statement", "period"]
-    header_hits = sum(1 for tok in header_tokens if tok in first)
-    if header_hits <= 1:
-        warnings.append("Layout: key header fields look missing/unclear on page 1.")
-
-    line_counts = [len((p or "").splitlines()) for p in pages_text]
-    if num_pages >= 3:
-        internal = line_counts[1:-1]
-        avg_lines = sum(internal) / max(1, len(internal))
-        for idx in range(1, num_pages - 1):
-            count = line_counts[idx]
-            if avg_lines > 0 and count < 0.5 * avg_lines:
-                warnings.append(f"Layout: page {idx+1} has far fewer text lines than other pages.")
-
-    pages_with_marker = []
-    for idx, txt in enumerate(pages_text):
-        if re.search(r"page\s+\d+\s+of\s+\d+", (txt or "").lower()):
-            pages_with_marker.append(idx)
-
-    if 0 < len(pages_with_marker) < num_pages:
-        missing = [str(i + 1) for i in range(num_pages) if i not in pages_with_marker]
-        warnings.append("Layout: page numbering marker appears on some pages but missing on: " + ", ".join(missing))
-
-    return warnings
+# -------------------------
+# AWS client
+# -------------------------
+def _textract_client():
+    region = os.getenv("AWS_REGION") or os.getenv("AWS_DEFAULT_REGION")
+    if not region:
+        raise HTTPException(status_code=500, detail="AWS_REGION is not set in environment.")
+    # Credentials are read from environment variables you already exported
+    return boto3.client("textract", region_name=region)
 
 
-def extract_transactions_pdfplumber(file_bytes: bytes) -> List[dict]:
-    transactions: List[dict] = []
+# -------------------------
+# Normalization (HEIC/PNG/JPG -> JPEG bytes, PDF stays PDF)
+# -------------------------
+def _normalize_for_textract(raw: bytes, ext: str) -> Tuple[bytes, str]:
+    if ext == ".pdf":
+        return raw, "pdf"
 
-    def _to_money(x: Optional[str]) -> Optional[float]:
-        if not x:
-            return None
-        s = str(x).strip()
-        if not s:
-            return None
-        s = s.replace(",", "").replace("£", "").replace(" ", "")
-        if s.startswith("(") and s.endswith(")"):
-            s = "-" + s[1:-1]
+    # HEIC/HEIF requires extra decoder
+    if ext in {".heic", ".heif"}:
+        # Optional support (works only if pillow-heif is installed and system libs are available)
         try:
-            return float(s)
+            import pillow_heif  # type: ignore
+
+            pillow_heif.register_heif_opener()
         except Exception:
-            return None
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "HEIC/HEIF upload received, but HEIC decoding is not available on this machine. "
+                    "Please convert the image to JPG/PNG and try again."
+                ),
+            )
 
-    with pdfplumber.open(BytesIO(file_bytes)) as pdf:
-        for page_idx, page in enumerate(pdf.pages):
-            tables = page.extract_tables()
-            if not tables:
-                continue
-
-            for table in tables:
-                if not table or len(table) < 2:
-                    continue
-
-                headers = [(h or "").strip().lower() for h in table[0]]
-
-                date_idx = next((i for i, h in enumerate(headers) if "date" in h), None)
-                debit_idx = next(
-                    (i for i, h in enumerate(headers) if "debit" in h or "paid out" in h or h == "out"), None
-                )
-                credit_idx = next(
-                    (i for i, h in enumerate(headers) if "credit" in h or "paid in" in h or h == "in"), None
-                )
-                amount_idx = next((i for i, h in enumerate(headers) if "amount" in h), None)
-                balance_idx = next((i for i, h in enumerate(headers) if "balance" in h), None)
-
-                if balance_idx is None:
-                    continue
-
-                for row_idx, row in enumerate(table[1:], start=2):
-                    if not row or balance_idx >= len(row):
-                        continue
-
-                    bal = _to_money(row[balance_idx])
-                    if bal is None:
-                        continue
-
-                    debit = 0.0
-                    credit = 0.0
-
-                    if debit_idx is not None and debit_idx < len(row):
-                        d = _to_money(row[debit_idx])
-                        if d is not None:
-                            debit = abs(d)
-
-                    if credit_idx is not None and credit_idx < len(row):
-                        c = _to_money(row[credit_idx])
-                        if c is not None:
-                            credit = abs(c)
-
-                    if amount_idx is not None and amount_idx < len(row):
-                        a = _to_money(row[amount_idx])
-                        if a is not None:
-                            if a < 0:
-                                debit = abs(a)
-                            else:
-                                credit = a
-
-                    transactions.append(
-                        {
-                            "page": page_idx + 1,
-                            "row": row_idx,
-                            "debit": float(debit),
-                            "credit": float(credit),
-                            "balance": float(bal),
-                            "date": (row[date_idx] if (date_idx is not None and date_idx < len(row)) else None),
-                        }
-                    )
-
-    return transactions
+    # Convert any image to JPEG for Textract
+    img = Image.open(BytesIO(raw))
+    img = img.convert("RGB")
+    out = BytesIO()
+    img.save(out, format="JPEG", quality=90)
+    return out.getvalue(), "image/jpeg"
 
 
-def running_balance_check_rows(transactions: List[dict]) -> List[str]:
-    warnings: List[str] = []
-
-    if len(transactions) < 3:
-        return ["Running balance: not enough extracted rows to validate."]
-
-    def _count_mismatches(rows: List[dict]) -> Tuple[int, List[str]]:
-        local_warn: List[str] = []
-        m = 0
-        for i in range(1, len(rows)):
-            prev = rows[i - 1]
-            curr = rows[i]
-            expected = prev["balance"] + curr["credit"] - curr["debit"]
-            if abs(expected - curr["balance"]) > 0.01:
-                m += 1
-                if m <= 5:
-                    local_warn.append(
-                        f"Running balance: mismatch on page {curr['page']} row {curr['row']} "
-                        f"(expected £{expected:.2f}, saw £{curr['balance']:.2f})."
-                    )
-        return m, local_warn
-
-    m1, w1 = _count_mismatches(transactions)
-    m2, w2 = _count_mismatches(list(reversed(transactions)))
-
-    if m2 < m1:
-        mismatches, best_warn = m2, w2
-    else:
-        mismatches, best_warn = m1, w1
-
-    warnings.extend(best_warn)
-
-    if mismatches >= 5:
-        warnings.append("Running balance: many inconsistencies detected (showing first 5).")
-
-    return warnings
+def _ext_lower(name: str) -> str:
+    name = name.lower()
+    m = re.search(r"(\.[a-z0-9]+)$", name)
+    return m.group(1) if m else ""
 
 
-def ai_generation_signals(meta_text: str) -> Tuple[str, List[str]]:
+# -------------------------
+# Parsing helpers (AnalyzeExpense response)
+# -------------------------
+def _parse_summary_fields(resp: Dict[str, Any]) -> Tuple[Optional[str], Optional[float], Optional[str], Optional[str]]:
     """
-    Detects AI / synthetic PDF generation indicators based on metadata only.
-    Returns: (level, reasons)
-    level: "none" | "possible" | "strong"
+    Returns: vendor, total, currency, date
     """
-    reasons: List[str] = []
-    level = "none"
+    docs = resp.get("ExpenseDocuments") or []
+    if not docs:
+        return None, None, None, None
 
-    strong_ai_tools = [
-        "reportlab",
-        "weasyprint",
-        "wkhtmltopdf",
-        "langchain",
-        "playwright",
-        "puppeteer",
-        "headlesschrome",
-        "chatgpt",
-        "openai",
-        "gpt",
+    doc0 = docs[0]
+    summary_fields = doc0.get("SummaryFields") or []
+
+    vendor = _pick_summary(summary_fields, ["VENDOR_NAME", "SUPPLIER_NAME", "MERCHANT_NAME"])
+    total_str = _pick_summary(summary_fields, ["TOTAL", "AMOUNT_DUE", "INVOICE_RECEIPT_TOTAL"])
+    date = _pick_summary(summary_fields, ["INVOICE_RECEIPT_DATE", "INVOICE_RECEIPT_RECEIPT_DATE", "DATE"])
+
+    total = _to_float(total_str)
+    currency = _guess_currency(total_str)
+
+    return vendor, total, currency, date
+
+
+def _pick_summary(summary_fields: List[Dict[str, Any]], keys: List[str]) -> Optional[str]:
+    """
+    Picks the first match among keys by FieldType.Text
+    """
+    for want in keys:
+        for f in summary_fields:
+            ftype = ((f.get("Type") or {}).get("Text") or "").strip().upper()
+            if ftype == want:
+                return _field_value_text(f)
+    return None
+
+
+def _field_value_text(field: Dict[str, Any]) -> Optional[str]:
+    val = field.get("ValueDetection") or {}
+    txt = (val.get("Text") or "").strip()
+    return txt or None
+
+
+def _to_float(val: Optional[str]) -> Optional[float]:
+    if not val:
+        return None
+    s = val.strip()
+    s = s.replace(",", "")
+    # keep digits, dot, minus
+    s = re.sub(r"[^0-9\.\-]", "", s)
+    if not s:
+        return None
+    try:
+        return float(s)
+    except Exception:
+        return None
+
+
+def _guess_currency(val: Optional[str]) -> Optional[str]:
+    if not val:
+        return None
+    if "£" in val:
+        return "GBP"
+    if "$" in val:
+        return "USD"
+    if "€" in val:
+        return "EUR"
+    return None
+
+
+def _parse_line_items(resp: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """
+    Tries to parse line items from ExpenseDocuments[0].LineItemGroups
+    Output format is stable for your frontend:
+      [{description, quantity, unit_price, amount, raw_fields}, ...]
+    """
+    docs = resp.get("ExpenseDocuments") or []
+    if not docs:
+        return []
+
+    doc0 = docs[0]
+    groups = doc0.get("LineItemGroups") or []
+    items_out: List[Dict[str, Any]] = []
+
+    for g in groups:
+        line_items = g.get("LineItems") or []
+        for li in line_items:
+            fields = li.get("LineItemExpenseFields") or []
+            description = _pick_line_item(fields, ["ITEM", "DESCRIPTION", "PRODUCT_CODE", "NAME"])
+            quantity = _to_float(_pick_line_item(fields, ["QUANTITY"]))
+            unit_price = _to_float(_pick_line_item(fields, ["UNIT_PRICE", "PRICE"]))
+            amount = _to_float(_pick_line_item(fields, ["AMOUNT", "LINE_TOTAL", "TOTAL_PRICE"]))
+
+            # Fallback: if amount missing but we have qty * unit_price
+            if amount is None and quantity is not None and unit_price is not None:
+                amount = round(quantity * unit_price, 2)
+
+            items_out.append(
+                {
+                    "description": description,
+                    "quantity": quantity,
+                    "unit_price": unit_price,
+                    "amount": amount,
+                    "raw_fields": _flatten_fields(fields),
+                }
+            )
+
+    # Remove empty rows (Textract sometimes outputs partial lines)
+    cleaned = [
+        x for x in items_out
+        if (x.get("description") or x.get("amount") is not None or x.get("unit_price") is not None)
     ]
+    return cleaned
 
-    generic_signals = [
-        "pdf generator",
-        "generator",
-    ]
 
-    lower = (meta_text or "").lower().strip()
+def _pick_line_item(fields: List[Dict[str, Any]], keys: List[str]) -> Optional[str]:
+    for want in keys:
+        for f in fields:
+            ftype = ((f.get("Type") or {}).get("Text") or "").strip().upper()
+            if ftype == want:
+                return _field_value_text(f)
+    return None
 
-    if any(x in lower for x in strong_ai_tools):
-        level = "strong"
-        reasons.append("AI/synthetic indicator: metadata mentions an automated generation tool.")
-    elif not lower:
-        level = "possible"
-        reasons.append("AI/synthetic indicator: metadata missing (common in automated PDFs, but also common in real exports).")
-    elif any(x in lower for x in generic_signals):
-        level = "possible"
-        reasons.append("AI/synthetic indicator: metadata suggests a generic PDF generator (weak evidence).")
 
-    return level, reasons
+def _flatten_fields(fields: List[Dict[str, Any]]) -> Dict[str, Optional[str]]:
+    out: Dict[str, Optional[str]] = {}
+    for f in fields:
+        k = ((f.get("Type") or {}).get("Text") or "").strip()
+        if not k:
+            continue
+        out[k] = _field_value_text(f)
+    return out
