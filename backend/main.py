@@ -15,7 +15,7 @@ from PIL import Image
 # -------------------------
 app = FastAPI(title="Supplier Price Watch API")
 
-# For dev: allow all. In production you can lock this to your Vercel domain.
+# For dev: allow all. In production lock this down to your Vercel domain.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -24,12 +24,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 # -------------------------
 # Constants
 # -------------------------
-MAX_SYNC_BYTES = 5 * 1024 * 1024  # Textract synchronous APIs: keep it small & safe
+MAX_SYNC_BYTES = 5 * 1024 * 1024  # Textract sync APIs: keep it small & safe
+
 SUPPORTED_EXTS = {".pdf", ".png", ".jpg", ".jpeg", ".heic", ".heif"}
+
+# Content-types we consider valid
+SUPPORTED_CONTENT_TYPES = {
+    "application/pdf",
+    "image/png",
+    "image/jpeg",
+    "image/jpg",
+    "image/heic",
+    "image/heif",
+    # sometimes browsers send this:
+    "application/octet-stream",
+}
 
 
 # -------------------------
@@ -60,10 +72,19 @@ async def _analyse_impl(file: UploadFile) -> Dict[str, Any]:
         raise HTTPException(status_code=400, detail="Missing filename.")
 
     ext = _ext_lower(filename)
-    if ext not in SUPPORTED_EXTS:
+    content_type = (file.content_type or "").strip().lower()
+
+    # Allow either extension or content-type to decide support
+    if ext and ext not in SUPPORTED_EXTS:
         raise HTTPException(
             status_code=400,
-            detail=f"Unsupported file type '{ext}'. Supported: PDF, PNG, JPG/JPEG, HEIC/HEIF.",
+            detail=f"Unsupported file extension '{ext}'. Supported: PDF, PNG, JPG/JPEG, HEIC/HEIF.",
+        )
+
+    if content_type and content_type not in SUPPORTED_CONTENT_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported content-type '{content_type}'. Supported: PDF or image files.",
         )
 
     raw = await file.read()
@@ -75,9 +96,13 @@ async def _analyse_impl(file: UploadFile) -> Dict[str, Any]:
             detail=f"File too large for realtime extraction (max {MAX_SYNC_BYTES // (1024*1024)} MB).",
         )
 
-    # Convert images to JPEG bytes for Textract (PDF can be sent as-is)
+    # Decide ext if missing / weird
+    if not ext:
+        ext = _guess_ext_from_content_type(content_type)
+
+    # Convert images -> JPEG bytes, PDF stays PDF
     try:
-        document_bytes, normalized_type = _normalize_for_textract(raw, ext)
+        document_bytes, normalized_type = _normalize_for_textract(raw, ext, content_type)
     except HTTPException:
         raise
     except Exception as e:
@@ -88,10 +113,7 @@ async def _analyse_impl(file: UploadFile) -> Dict[str, Any]:
         textract = _textract_client()
         resp = textract.analyze_expense(Document={"Bytes": document_bytes})
     except (BotoCoreError, ClientError) as e:
-        raise HTTPException(
-            status_code=502,
-            detail=f"AWS Textract error: {str(e)}",
-        )
+        raise HTTPException(status_code=502, detail=f"AWS Textract error: {str(e)}")
 
     # Parse vendor/total/date/items
     vendor, total, currency, date = _parse_summary_fields(resp)
@@ -106,8 +128,10 @@ async def _analyse_impl(file: UploadFile) -> Dict[str, Any]:
         "date": date,
         "items": items,
         "items_count": len(items),
-        # You can remove this later, but it helps debugging now:
         "debug": {
+            "content_type": content_type,
+            "ext": ext,
+            "bytes": len(raw),
             "has_expense_documents": bool(resp.get("ExpenseDocuments")),
         },
     }
@@ -120,39 +144,62 @@ def _textract_client():
     region = os.getenv("AWS_REGION") or os.getenv("AWS_DEFAULT_REGION")
     if not region:
         raise HTTPException(status_code=500, detail="AWS_REGION is not set in environment.")
-    # Credentials are read from environment variables you already exported
     return boto3.client("textract", region_name=region)
 
 
 # -------------------------
-# Normalization (HEIC/PNG/JPG -> JPEG bytes, PDF stays PDF)
+# Normalization
+# HEIC/PNG/JPG -> JPEG bytes
+# PDF stays PDF
 # -------------------------
-def _normalize_for_textract(raw: bytes, ext: str) -> Tuple[bytes, str]:
-    if ext == ".pdf":
+def _normalize_for_textract(raw: bytes, ext: str, content_type: str) -> Tuple[bytes, str]:
+    # Treat PDF as-is
+    if ext == ".pdf" or content_type == "application/pdf":
         return raw, "pdf"
 
     # HEIC/HEIF requires extra decoder
-    if ext in {".heic", ".heif"}:
-        # Optional support (works only if pillow-heif is installed and system libs are available)
+    if ext in {".heic", ".heif"} or content_type in {"image/heic", "image/heif"}:
         try:
             import pillow_heif  # type: ignore
-
             pillow_heif.register_heif_opener()
         except Exception:
             raise HTTPException(
                 status_code=400,
                 detail=(
-                    "HEIC/HEIF upload received, but HEIC decoding is not available on this machine. "
-                    "Please convert the image to JPG/PNG and try again."
+                    "HEIC/HEIF upload received, but HEIC decoding isn't available here. "
+                    "Install pillow-heif OR convert the image to JPG/PNG and try again."
                 ),
             )
 
-    # Convert any image to JPEG for Textract
-    img = Image.open(BytesIO(raw))
-    img = img.convert("RGB")
+    # Convert any image -> JPEG for Textract
+    try:
+        img = Image.open(BytesIO(raw))
+    except Exception as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Could not open uploaded image. If this is a screenshot, re-save as PNG/JPG. Error: {e}",
+        )
+
+    # Ensure RGB (Textract likes JPEG RGB)
+    if img.mode not in ("RGB",):
+        img = img.convert("RGB")
+
     out = BytesIO()
-    img.save(out, format="JPEG", quality=90)
+    img.save(out, format="JPEG", quality=90, optimize=True)
     return out.getvalue(), "image/jpeg"
+
+
+def _guess_ext_from_content_type(content_type: str) -> str:
+    if content_type == "application/pdf":
+        return ".pdf"
+    if content_type in {"image/jpeg", "image/jpg"}:
+        return ".jpg"
+    if content_type == "image/png":
+        return ".png"
+    if content_type in {"image/heic", "image/heif"}:
+        return ".heic"
+    # fallback
+    return ""
 
 
 def _ext_lower(name: str) -> str:
@@ -186,9 +233,6 @@ def _parse_summary_fields(resp: Dict[str, Any]) -> Tuple[Optional[str], Optional
 
 
 def _pick_summary(summary_fields: List[Dict[str, Any]], keys: List[str]) -> Optional[str]:
-    """
-    Picks the first match among keys by FieldType.Text
-    """
     for want in keys:
         for f in summary_fields:
             ftype = ((f.get("Type") or {}).get("Text") or "").strip().upper()
@@ -206,9 +250,7 @@ def _field_value_text(field: Dict[str, Any]) -> Optional[str]:
 def _to_float(val: Optional[str]) -> Optional[float]:
     if not val:
         return None
-    s = val.strip()
-    s = s.replace(",", "")
-    # keep digits, dot, minus
+    s = val.strip().replace(",", "")
     s = re.sub(r"[^0-9\.\-]", "", s)
     if not s:
         return None
@@ -231,11 +273,6 @@ def _guess_currency(val: Optional[str]) -> Optional[str]:
 
 
 def _parse_line_items(resp: Dict[str, Any]) -> List[Dict[str, Any]]:
-    """
-    Tries to parse line items from ExpenseDocuments[0].LineItemGroups
-    Output format is stable for your frontend:
-      [{description, quantity, unit_price, amount, raw_fields}, ...]
-    """
     docs = resp.get("ExpenseDocuments") or []
     if not docs:
         return []
@@ -253,7 +290,6 @@ def _parse_line_items(resp: Dict[str, Any]) -> List[Dict[str, Any]]:
             unit_price = _to_float(_pick_line_item(fields, ["UNIT_PRICE", "PRICE"]))
             amount = _to_float(_pick_line_item(fields, ["AMOUNT", "LINE_TOTAL", "TOTAL_PRICE"]))
 
-            # Fallback: if amount missing but we have qty * unit_price
             if amount is None and quantity is not None and unit_price is not None:
                 amount = round(quantity * unit_price, 2)
 
@@ -267,9 +303,9 @@ def _parse_line_items(resp: Dict[str, Any]) -> List[Dict[str, Any]]:
                 }
             )
 
-    # Remove empty rows (Textract sometimes outputs partial lines)
     cleaned = [
-        x for x in items_out
+        x
+        for x in items_out
         if (x.get("description") or x.get("amount") is not None or x.get("unit_price") is not None)
     ]
     return cleaned
