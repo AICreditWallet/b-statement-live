@@ -2,7 +2,49 @@ import { currentUser, logout, deleteAccount, clearMyData } from "./auth.js";
 
 console.log("Dashboard JS loaded");
 
-const BACKEND_URL = "http://127.0.0.1:8000/analyse";
+/**
+ * Backend base URL resolution (works for:
+ * - Local dev (defaults to http://127.0.0.1:8000)
+ * - Vercel/Prod (set window.BACKEND_API_BASE OR VITE_BACKEND_API_BASE at build time)
+ *
+ * IMPORTANT:
+ * - If you’re deploying a static frontend, the easiest is to set this in your HTML:
+ *   <script>window.BACKEND_API_BASE="https://YOUR-BACKEND-DOMAIN"</script>
+ * - If you use Vite, set VITE_BACKEND_API_BASE in Vercel env vars.
+ */
+function resolveBackendApiBase() {
+  // 1) Runtime browser global
+  const fromWindow =
+    typeof window !== "undefined" && typeof window.BACKEND_API_BASE === "string"
+      ? window.BACKEND_API_BASE.trim()
+      : "";
+
+  if (fromWindow) return fromWindow;
+
+  // 2) Vite build-time env var (if you use Vite)
+  // (won't throw if import.meta is not available)
+  let fromVite = "";
+  try {
+    fromVite =
+      (typeof import.meta !== "undefined" &&
+      import.meta.env &&
+      typeof import.meta.env.VITE_BACKEND_API_BASE === "string"
+        ? import.meta.env.VITE_BACKEND_API_BASE.trim()
+        : "") || "";
+  } catch {
+    // ignore
+  }
+
+  if (fromVite) return fromVite;
+
+  // 3) Fallback to localhost for dev
+  return "http://127.0.0.1:8000";
+}
+
+const API_BASE = resolveBackendApiBase().replace(/\/$/, "");
+const BACKEND_ANALYSE_URL = `${API_BASE}/analyse`;
+const BACKEND_ANALYZE_URL = `${API_BASE}/analyze`; // alias support
+
 const REQUEST_TIMEOUT_MS = 12000;
 const MAX_FILES = 10;
 
@@ -33,10 +75,23 @@ function setStatus(msg) {
   if (statusEl) statusEl.textContent = msg || "";
 }
 
+function currencySymbol(codeOrSymbol) {
+  // backend returns "GBP"/"USD"/"EUR" sometimes
+  if (!codeOrSymbol) return "£";
+  const v = String(codeOrSymbol).trim();
+  if (v === "GBP") return "£";
+  if (v === "USD") return "$";
+  if (v === "EUR") return "€";
+  // if already a symbol like £ $ €
+  if (v === "£" || v === "$" || v === "€") return v;
+  return "£";
+}
+
 function money(n, currency = "£") {
   const num = Number(n);
-  if (!Number.isFinite(num)) return `${currency}0.00`;
-  return `${currency}${num.toFixed(2)}`;
+  const sym = currencySymbol(currency);
+  if (!Number.isFinite(num)) return `${sym}0.00`;
+  return `${sym}${num.toFixed(2)}`;
 }
 
 function titleCase(s) {
@@ -100,6 +155,27 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_M
   }
 }
 
+/**
+ * Try /analyse first, then /analyze if needed.
+ */
+async function postToBackend(formData) {
+  // try /analyse
+  let res = await fetchWithTimeout(BACKEND_ANALYSE_URL, {
+    method: "POST",
+    body: formData
+  });
+
+  // if endpoint mismatch, try /analyze
+  if (!res.ok && (res.status === 404 || res.status === 405)) {
+    res = await fetchWithTimeout(BACKEND_ANALYZE_URL, {
+      method: "POST",
+      body: formData
+    });
+  }
+
+  return res;
+}
+
 function pickTotalFromBackendJSON(data) {
   if (!data || typeof data !== "object") return null;
 
@@ -116,6 +192,16 @@ function pickTotalFromBackendJSON(data) {
     if (Number.isFinite(n) && n > 0) return n;
   }
   return null;
+}
+
+function pickCurrencyFromBackendJSON(data) {
+  if (!data || typeof data !== "object") return "£";
+  return data.currency || data.currency_code || "£";
+}
+
+function pickVendorFromBackendJSON(data) {
+  if (!data || typeof data !== "object") return null;
+  return data.vendor || data.merchant || data.supplier || null;
 }
 
 function demoTotalFromFile(file) {
@@ -138,7 +224,7 @@ function renderInvoices(invoices) {
       <td>${inv.date || "—"}</td>
       <td>${inv.supplier || "—"}</td>
       <td title="${inv.filename || ""}">${inv.filename || "—"}</td>
-      <td>${money(inv.total)}</td>
+      <td>${money(inv.total, inv.currency || "£")}</td>
       <td>${inv.changeText || "—"}</td>
     `;
     invoicesTbody.appendChild(tr);
@@ -162,8 +248,8 @@ function renderLeaderboard(history) {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${s.displayName || "—"}</td>
-      <td>${money(s.totalSpend)}</td>
-      <td>${money(s.lastInvoiceTotal)}</td>
+      <td>${money(s.totalSpend, s.currency || "£")}</td>
+      <td>${money(s.lastInvoiceTotal, s.currency || "£")}</td>
       <td>${s.lastChangeText || "—"}</td>
     `;
     leaderTbody.appendChild(tr);
@@ -229,30 +315,37 @@ analyseAllBtn.addEventListener("click", async () => {
     const f = selectedFiles[i];
     setStatus(`Analysing ${i + 1}/${selectedFiles.length}: ${f.name}`);
 
-    const supplierName = inferSupplierFromFilename(f.name);
-    const sKey = supplierKey(supplierName);
+    // Default supplier guess; if backend returns vendor, we'll override it
+    let supplierName = inferSupplierFromFilename(f.name);
+    let sKey = supplierKey(supplierName);
 
     let usedBackend = false;
     let total = null;
+    let currency = "£";
 
     // Try backend
     try {
       const formData = new FormData();
       formData.append("file", f);
 
-      const res = await fetchWithTimeout(BACKEND_URL, {
-        method: "POST",
-        body: formData
-      });
+      const res = await postToBackend(formData);
 
       if (res.ok) {
         const data = await res.json();
+
+        const backendVendor = pickVendorFromBackendJSON(data);
+        if (backendVendor) {
+          supplierName = backendVendor;
+          sKey = supplierKey(supplierName);
+        }
+
+        currency = pickCurrencyFromBackendJSON(data) || "£";
         total = pickTotalFromBackendJSON(data);
         usedBackend = true;
 
         if (total == null) {
+          // backend connected but no total
           total = demoTotalFromFile(f);
-          usedBackend = true; // backend connected but no total
         }
       } else {
         total = demoTotalFromFile(f);
@@ -263,14 +356,15 @@ analyseAllBtn.addEventListener("click", async () => {
 
     const prev = history.suppliers[sKey];
     const prevTotal = prev?.lastInvoiceTotal ?? null;
-    const chText = changeText(total, prevTotal);
+    const chText = changeText(total, prevTotal, currency);
 
     // Update supplier history
     history.suppliers[sKey] = {
       displayName: supplierName,
       totalSpend: (prev?.totalSpend || 0) + total,
       lastInvoiceTotal: total,
-      lastChangeText: chText
+      lastChangeText: chText,
+      currency
     };
 
     // Add invoice record
@@ -280,6 +374,7 @@ analyseAllBtn.addEventListener("click", async () => {
       supplier: supplierName,
       filename: f.name,
       total,
+      currency,
       changeText: chText,
       source: usedBackend ? "backend" : "demo"
     });
@@ -312,10 +407,17 @@ analyseAllBtn.addEventListener("click", async () => {
 
   updateSelectionUI();
 
-  // Honest warning
+  // Warnings to help you debug deployments
   const onLocalhost = ["localhost", "127.0.0.1"].includes(window.location.hostname);
-  if (!onLocalhost && BACKEND_URL.includes("127.0.0.1")) {
-    console.warn("BACKEND_URL points to localhost but site is not localhost. Backend calls will fail -> demo mode.");
+  if (!onLocalhost && API_BASE.includes("127.0.0.1")) {
+    console.warn(
+      "API_BASE points to localhost but site is not localhost. Backend calls will fail -> demo mode."
+    );
+    setStatus(
+      "⚠️ Backend API_BASE is still localhost. Set BACKEND_API_BASE (or VITE_BACKEND_API_BASE) to your deployed backend URL."
+    );
+  } else {
+    console.log("Using API_BASE:", API_BASE);
   }
 })();
 
