@@ -3,42 +3,25 @@ import { currentUser, logout, deleteAccount, clearMyData } from "./auth.js";
 console.log("Dashboard JS loaded");
 
 /**
- * Backend base URL resolution (works for:
- * - Local dev (defaults to http://127.0.0.1:8000)
- * - Vercel/Prod (set window.BACKEND_API_BASE OR VITE_BACKEND_API_BASE at build time)
+ * Backend base URL resolution:
+ * - Local dev (localhost/127.0.0.1) -> http://127.0.0.1:8000
+ * - Production (Vercel) -> your Railway backend URL
  *
- * IMPORTANT:
- * - If you’re deploying a static frontend, the easiest is to set this in your HTML:
- *   <script>window.BACKEND_API_BASE="https://YOUR-BACKEND-DOMAIN"</script>
- * - If you use Vite, set VITE_BACKEND_API_BASE in Vercel env vars.
+ * NOTE: This is the simplest + most reliable setup for a static frontend.
+ * If later you want environment variables, we can re-add them.
  */
 function resolveBackendApiBase() {
-  // 1) Runtime browser global
-  const fromWindow =
-    typeof window !== "undefined" && typeof window.BACKEND_API_BASE === "string"
-      ? window.BACKEND_API_BASE.trim()
-      : "";
+  const host = window.location.hostname;
 
-  if (fromWindow) return fromWindow;
+  const isLocal =
+    host === "localhost" ||
+    host === "127.0.0.1" ||
+    host.endsWith(".local");
 
-  // 2) Vite build-time env var (if you use Vite)
-  // (won't throw if import.meta is not available)
-  let fromVite = "";
-  try {
-    fromVite =
-      (typeof import.meta !== "undefined" &&
-      import.meta.env &&
-      typeof import.meta.env.VITE_BACKEND_API_BASE === "string"
-        ? import.meta.env.VITE_BACKEND_API_BASE.trim()
-        : "") || "";
-  } catch {
-    // ignore
-  }
+  if (isLocal) return "http://127.0.0.1:8000";
 
-  if (fromVite) return fromVite;
-
-  // 3) Fallback to localhost for dev
-  return "http://127.0.0.1:8000";
+  // ✅ Your deployed backend (Railway)
+  return "https://b-statement-live-production.up.railway.app";
 }
 
 const API_BASE = resolveBackendApiBase().replace(/\/$/, "");
@@ -76,13 +59,11 @@ function setStatus(msg) {
 }
 
 function currencySymbol(codeOrSymbol) {
-  // backend returns "GBP"/"USD"/"EUR" sometimes
   if (!codeOrSymbol) return "£";
   const v = String(codeOrSymbol).trim();
   if (v === "GBP") return "£";
   if (v === "USD") return "$";
   if (v === "EUR") return "€";
-  // if already a symbol like £ $ €
   if (v === "£" || v === "$" || v === "€") return v;
   return "£";
 }
@@ -117,7 +98,9 @@ function changeText(now, prev, currency = "£") {
   if (prev == null) return "First time";
   const diff = now - prev;
   if (Math.abs(diff) < 0.01) return "No change";
-  return diff > 0 ? `+${money(diff, currency)}` : `-${money(Math.abs(diff), currency)}`;
+  return diff > 0
+    ? `+${money(diff, currency)}`
+    : `-${money(Math.abs(diff), currency)}`;
 }
 
 function isoDate() {
@@ -129,7 +112,7 @@ function invoicesKey(userId) {
   return `spw_invoices_${userId}`;
 }
 function historyKey(userId) {
-  return `spw_history_${userId}`; // matches your supplier-price-watch.js convention
+  return `spw_history_${userId}`;
 }
 
 function loadJSON(key, fallback) {
@@ -140,6 +123,7 @@ function loadJSON(key, fallback) {
     return fallback;
   }
 }
+
 function saveJSON(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
 }
@@ -159,13 +143,11 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_M
  * Try /analyse first, then /analyze if needed.
  */
 async function postToBackend(formData) {
-  // try /analyse
   let res = await fetchWithTimeout(BACKEND_ANALYSE_URL, {
     method: "POST",
     body: formData
   });
 
-  // if endpoint mismatch, try /analyze
   if (!res.ok && (res.status === 404 || res.status === 405)) {
     res = await fetchWithTimeout(BACKEND_ANALYZE_URL, {
       method: "POST",
@@ -266,7 +248,6 @@ function renderLeaderboard(history) {
 // ----- main -----
 const user = currentUser();
 if (!user) {
-  // Not logged in => kick out
   window.location.href = "./login.html";
 }
 
@@ -310,12 +291,10 @@ analyseAllBtn.addEventListener("click", async () => {
   const history = loadJSON(histKey, { suppliers: {} });
   history.suppliers ||= {};
 
-  // process sequentially (simpler, predictable)
   for (let i = 0; i < selectedFiles.length; i++) {
     const f = selectedFiles[i];
     setStatus(`Analysing ${i + 1}/${selectedFiles.length}: ${f.name}`);
 
-    // Default supplier guess; if backend returns vendor, we'll override it
     let supplierName = inferSupplierFromFilename(f.name);
     let sKey = supplierKey(supplierName);
 
@@ -323,7 +302,6 @@ analyseAllBtn.addEventListener("click", async () => {
     let total = null;
     let currency = "£";
 
-    // Try backend
     try {
       const formData = new FormData();
       formData.append("file", f);
@@ -343,10 +321,7 @@ analyseAllBtn.addEventListener("click", async () => {
         total = pickTotalFromBackendJSON(data);
         usedBackend = true;
 
-        if (total == null) {
-          // backend connected but no total
-          total = demoTotalFromFile(f);
-        }
+        if (total == null) total = demoTotalFromFile(f);
       } else {
         total = demoTotalFromFile(f);
       }
@@ -358,7 +333,6 @@ analyseAllBtn.addEventListener("click", async () => {
     const prevTotal = prev?.lastInvoiceTotal ?? null;
     const chText = changeText(total, prevTotal, currency);
 
-    // Update supplier history
     history.suppliers[sKey] = {
       displayName: supplierName,
       totalSpend: (prev?.totalSpend || 0) + total,
@@ -367,7 +341,6 @@ analyseAllBtn.addEventListener("click", async () => {
       currency
     };
 
-    // Add invoice record
     invoices.unshift({
       id: crypto.randomUUID?.() || String(Date.now() + Math.random()),
       date: isoDate(),
@@ -383,7 +356,6 @@ analyseAllBtn.addEventListener("click", async () => {
   saveJSON(invKey, invoices);
   saveJSON(histKey, history);
 
-  // reset file input
   filesInput.value = "";
   selectedFiles = [];
   updateSelectionUI();
@@ -407,18 +379,7 @@ analyseAllBtn.addEventListener("click", async () => {
 
   updateSelectionUI();
 
-  // Warnings to help you debug deployments
-  const onLocalhost = ["localhost", "127.0.0.1"].includes(window.location.hostname);
-  if (!onLocalhost && API_BASE.includes("127.0.0.1")) {
-    console.warn(
-      "API_BASE points to localhost but site is not localhost. Backend calls will fail -> demo mode."
-    );
-    setStatus(
-      "⚠️ Backend API_BASE is still localhost. Set BACKEND_API_BASE (or VITE_BACKEND_API_BASE) to your deployed backend URL."
-    );
-  } else {
-    console.log("Using API_BASE:", API_BASE);
-  }
+  console.log("Using API_BASE:", API_BASE);
 })();
 
 // ----- settings modal wiring -----
