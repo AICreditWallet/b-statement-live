@@ -14,6 +14,28 @@ from PIL import Image
 # App + CORS
 # -------------------------
 app = FastAPI(title="Supplier Price Watch API")
+from fastapi import HTTPException
+import os
+import boto3
+
+@app.get("/health/textract")
+def health_textract():
+    region = os.getenv("AWS_REGION") or os.getenv("AWS_DEFAULT_REGION")
+    if not region:
+        raise HTTPException(status_code=500, detail="AWS_REGION / AWS_DEFAULT_REGION not set")
+
+    try:
+        textract = boto3.client("textract", region_name=region)
+
+        # Intentionally invalid ARN. If credentials+region work, AWS returns InvalidParameterException.
+        textract.list_tags_for_resource(ResourceARN="arn:aws:textract:invalid")
+        return {"ok": True, "region": region}
+
+    except textract.exceptions.InvalidParameterException:
+        return {"ok": True, "region": region}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Textract check failed: {str(e)}")
 
 # For dev: allow all. In production lock this down to your Vercel domain.
 app.add_middleware(
