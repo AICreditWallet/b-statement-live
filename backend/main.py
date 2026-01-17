@@ -18,24 +18,27 @@ from fastapi import HTTPException
 import os
 import boto3
 
+from io import BytesIO
+from fastapi import HTTPException
+from botocore.exceptions import BotoCoreError, ClientError
+from PIL import Image
+
 @app.get("/health/textract")
 def health_textract():
-    region = os.getenv("AWS_REGION") or os.getenv("AWS_DEFAULT_REGION")
-    if not region:
-        raise HTTPException(status_code=500, detail="AWS_REGION / AWS_DEFAULT_REGION not set")
-
     try:
-        textract = boto3.client("textract", region_name=region)
+        textract = _textract_client()
 
-        # Intentionally invalid ARN. If credentials+region work, AWS returns InvalidParameterException.
-        textract.list_tags_for_resource(ResourceARN="arn:aws:textract:invalid")
-        return {"ok": True, "region": region}
+        # 1x1 image so Textract can be called safely
+        img = Image.new("RGB", (1, 1), (255, 255, 255))
+        buf = BytesIO()
+        img.save(buf, format="PNG")
+        test_bytes = buf.getvalue()
 
-    except textract.exceptions.InvalidParameterException:
-        return {"ok": True, "region": region}
+        textract.detect_document_text(Document={"Bytes": test_bytes})
+        return {"status": "ok", "textract": "ok"}
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Textract check failed: {str(e)}")
+    except (BotoCoreError, ClientError) as e:
+        raise HTTPException(status_code=502, detail=f"Textract check failed: {str(e)}")
 
 # For dev: allow all. In production lock this down to your Vercel domain.
 app.add_middleware(
