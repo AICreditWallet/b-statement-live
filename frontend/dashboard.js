@@ -28,7 +28,7 @@ const API_BASE = resolveBackendApiBase().replace(/\/$/, "");
 const BACKEND_ANALYSE_URL = `${API_BASE}/analyse`;
 const BACKEND_ANALYZE_URL = `${API_BASE}/analyze`; // alias support
 
-const REQUEST_TIMEOUT_MS = 60000; // 60 seconds
+const REQUEST_TIMEOUT_MS = 90000; // 90 seconds
 const MAX_FILES = 10;
 
 const $ = (id) => document.getElementById(id);
