@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Access Control — Supplier Price Watch</title>
+  <link rel="stylesheet" href="./styles.css">
+
+  <style>
+    :root{ --bg:#f6f7fb; --card:#fff; --text:#111827; --muted:#6b7280; --border:rgba(0,0,0,.08); --shadow:0 12px 40px rgba(0,0,0,.08); }
+    body{ background:var(--bg); color:var(--text); }
+    .wrap{ max-width: 900px; margin: 0 auto; padding: 22px 18px 40px; }
+    .top{ display:flex; justify-content:space-between; align-items:center; gap:12px; padding:14px 0; }
+    .brand{ font-weight:800; letter-spacing:-0.01em; }
+    a{ color:inherit; }
+    .card{ background:var(--card); border:1px solid var(--border); border-radius:16px; box-shadow:var(--shadow); padding:18px; }
+    h1{ margin:0 0 6px; font-size:22px; letter-spacing:-0.02em; }
+    .muted{ color:var(--muted); font-size:13px; }
+    h2{ margin:16px 0 6px; font-size:15px; }
+    p, li{ color:#1f2937; font-size:14px; line-height:1.5; }
+    ul{ margin:8px 0 0 18px; }
+    .footer{ margin-top:14px; color:var(--muted); font-size:12.5px; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="top">
+      <div class="brand">Supplier Price Watch</div>
+      <a class="muted" href="./index.html">← Back</a>
+    </div>
+
+    <section class="card">
+      <h1>Access Control</h1>
+      <div class="muted">Plain English: who can access what.</div>
+
+      <h2>Login required</h2>
+      <p>
+        Invoice analysis is only available to logged-in users. This helps prevent abuse and keeps your data private.
+      </p>
+
+      <h2>Your data stays yours</h2>
+      <ul>
+        <li>Users can only view their own invoices and results.</li>
+        <li>We use database rules so records are filtered by the signed-in user.</li>
+      </ul>
+
+      <h2>Account actions</h2>
+      <ul>
+        <li>You can logout at any time.</li>
+        <li>You can delete your account from Settings.</li>
+      </ul>
+
+      <div class="footer">
+        Last updated: <span id="d"></span>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    document.getElementById("d").textContent = new Date().toISOString().slice(0,10);
+  </script>
+</body>
+</html>

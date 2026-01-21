@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Privacy Policy — Supplier Price Watch</title>
+  <link rel="stylesheet" href="./styles.css">
+
+  <style>
+    :root{ --bg:#f6f7fb; --card:#fff; --text:#111827; --muted:#6b7280; --border:rgba(0,0,0,.08); --shadow:0 12px 40px rgba(0,0,0,.08); }
+    body{ background:var(--bg); color:var(--text); }
+    .wrap{ max-width: 900px; margin: 0 auto; padding: 22px 18px 40px; }
+    .top{ display:flex; justify-content:space-between; align-items:center; gap:12px; padding:14px 0; }
+    .brand{ font-weight:800; letter-spacing:-0.01em; }
+    a{ color:inherit; }
+    .card{ background:var(--card); border:1px solid var(--border); border-radius:16px; box-shadow:var(--shadow); padding:18px; }
+    h1{ margin:0 0 6px; font-size:22px; letter-spacing:-0.02em; }
+    .muted{ color:var(--muted); font-size:13px; }
+    h2{ margin:16px 0 6px; font-size:15px; }
+    p, li{ color:#1f2937; font-size:14px; line-height:1.5; }
+    ul{ margin:8px 0 0 18px; }
+    .footer{ margin-top:14px; color:var(--muted); font-size:12.5px; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="top">
+      <div class="brand">Supplier Price Watch</div>
+      <a class="muted" href="./index.html">← Back</a>
+    </div>
+
+    <section class="card">
+      <h1>Privacy Policy</h1>
+      <div class="muted">Simple summary: we only use your data to provide the service.</div>
+
+      <h2>What we collect</h2>
+      <ul>
+        <li>Account details you provide (for example: name and email).</li>
+        <li>Invoices/receipts you upload (images or PDFs) for analysis.</li>
+        <li>Basic usage logs to keep the service reliable (errors, performance).</li>
+      </ul>
+
+      <h2>How we use it</h2>
+      <ul>
+        <li>To analyse invoices and show totals, suppliers, and trends.</li>
+        <li>To improve accuracy and fix bugs.</li>
+        <li>To prevent abuse and keep accounts secure.</li>
+      </ul>
+
+      <h2>Where your data is stored</h2>
+      <p>
+        Your analysed results are stored in our database so you can see them again when you come back.
+        We use secure infrastructure providers to run the service.
+      </p>
+
+      <h2>Sharing</h2>
+      <p>
+        We do not sell your data. We only share data with service providers needed to operate the app
+        (for example: hosting, database, OCR). We may share information if required by law.
+      </p>
+
+      <h2>Retention</h2>
+      <p>
+        We keep your data while your account is active. You can request deletion of your account and data.
+      </p>
+
+      <h2>Your choices</h2>
+      <ul>
+        <li>You can access and update your account information.</li>
+        <li>You can request deletion of your account.</li>
+      </ul>
+
+      <div class="footer">
+        Last updated: <span id="d"></span>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    document.getElementById("d").textContent = new Date().toISOString().slice(0,10);
+  </script>
+</body>
+</html>
