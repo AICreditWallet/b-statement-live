@@ -25,7 +25,7 @@
     body{ background:var(--bg); color:var(--text); }
 
     /* Layout */
-    .wrap { max-width: 1040px; margin: 0 auto; padding: 22px 18px 40px; }
+    .wrap { max-width: 1040px; margin: 0 auto; padding: 22px 18px 28px; }
 
     /* Top bar */
     .topBarSimple{
@@ -86,45 +86,44 @@
     /* Hero */
     .hero{
       margin-top:18px;
-      padding:22px;
+      padding:24px;
       border-radius:18px;
       background: linear-gradient(180deg, var(--brand1), var(--brand2));
       color:#fff;
       box-shadow: var(--shadow2);
       border: 1px solid rgba(255,255,255,.22);
     }
-    .heroGrid{
-      display:grid;
-      grid-template-columns: 1.1fr 1fr;
-      gap:18px;
-      align-items:start;
-    }
-    @media (max-width: 900px){
-      .heroGrid{ grid-template-columns: 1fr; }
+    .heroInner{
+      max-width: 860px;
+      margin: 0 auto;
+      text-align:center;
     }
     .hero h1{
-      font-size: clamp(28px, 4vw, 42px);
+      font-size: clamp(28px, 4vw, 44px);
       line-height: 1.06;
       margin: 0 0 10px;
       letter-spacing: -0.03em;
     }
-    .hero p{ margin:0 0 14px; font-size:14px; opacity:.95; max-width:70ch; }
-    .chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
-    .chip{
-      padding:8px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.25);
-      background: rgba(255,255,255,.14);
-      font-size:13px;
-      line-height:1;
+    .hero p{
+      margin:0 auto 16px;
+      font-size:14px;
+      opacity:.95;
+      max-width: 60ch;
     }
 
-    /* Upload box */
+    /* Centered upload box */
+    .uploadCenter{
+      display:flex;
+      justify-content:center;
+      margin-top:12px;
+    }
     .uploadBox{
+      width: min(760px, 100%);
       background: rgba(255,255,255,.14);
       border: 1px solid rgba(255,255,255,.22);
       border-radius: 14px;
       padding: 14px;
+      text-align:left;
     }
     .controls{
       display:flex;
@@ -135,6 +134,7 @@
     .controls label{ font-weight:600; font-size:13px; }
     .controls input[type="file"]{
       flex:1;
+      min-width: 240px;
       background: rgba(255,255,255,.92);
       border-radius: 10px;
       padding: 8px;
@@ -150,24 +150,25 @@
       font-size:14px;
       background:var(--btn);
       color:#fff;
-      min-width:160px;
+      min-width:180px;
       line-height:1;
+      white-space:nowrap;
     }
     .btn:disabled{ opacity:.55; cursor:not-allowed; box-shadow:none; }
 
     #status{ margin-top:10px; font-size:13px; opacity:.92; min-height:18px; }
+    .muted{ color: var(--muted); font-size: 13px; }
+    .hidden{ display:none !important; }
 
     /* Card */
     .card{
-      margin-top:16px;
+      margin-top:18px;
       background:var(--card);
       border-radius:18px;
       box-shadow:var(--shadow);
       padding:16px;
       border: 1px solid rgba(0,0,0,.06);
     }
-    .muted{ color: var(--muted); font-size: 13px; }
-    .hidden{ display:none !important; }
     .hr{ height:1px; background:rgba(0,0,0,.08); margin:14px 0; }
 
     .kpis{ display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-top:12px; }
@@ -193,7 +194,7 @@
     /* Footer */
     .footer{
       margin: 18px auto 0;
-      padding: 10px 0 22px;
+      padding: 10px 0 18px;
       text-align:center;
       color:var(--muted);
     }
@@ -212,6 +213,7 @@
     }
     .footerLinks a:hover{ text-decoration:underline; }
     .footerNote{ font-size:12.5px; }
+
   </style>
 </head>
 
@@ -233,23 +235,20 @@
 
   <main class="wrap">
     <section class="hero">
-      <div class="heroGrid">
-        <div>
-          <h1>Track supplier invoice totals</h1>
-          <p>
-            Upload a supplier invoice (PDF or photo) and analyse it. Sign in to unlock invoice analysis.
-          </p>
-        </div>
+      <div class="heroInner">
+        <h1>Track supplier invoice totals</h1>
+        <p>Upload a supplier invoice (PDF or photo) and analyse it. Sign in to unlock invoice analysis.</p>
 
-        <div class="uploadBox">
-          <div class="controls">
-            <label for="invoiceFile">Invoice</label>
-            <input id="invoiceFile" type="file" accept="application/pdf,image/*" />
-            <button id="analyseBtn" class="btn" disabled>Analyse (login required)</button>
-          </div>
-          <div id="status"></div>
-          <div class="muted" style="margin-top:8px;">
-            Tip: Login first to enable the Analyse button.
+        <div class="uploadCenter">
+          <div class="uploadBox">
+            <div class="controls">
+              <label for="invoiceFile">Invoice</label>
+              <input id="invoiceFile" type="file" accept="application/pdf,image/*" />
+              <button id="analyseBtn" class="btn" disabled>Analyse</button>
+            </div>
+
+            <div id="status"></div>
+            <div class="muted" style="margin-top:6px;">Tip: Login first to enable the Analyse button.</div>
           </div>
         </div>
       </div>
