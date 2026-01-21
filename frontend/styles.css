@@ -818,3 +818,35 @@ button.primary,
   opacity:.95;
   font-weight:700;
 }
+/* ---- Landing page polish ---- */
+
+/* Give the hero more breathing room */
+.hero {
+  padding: 28px !important;
+}
+
+/* Make the upload box look calmer and not so “boxed in” */
+.controls {
+  margin-top: 14px;
+  padding: 14px !important;
+}
+
+/* Reduce how wide the text block feels */
+.hero p {
+  max-width: 56ch !important;
+}
+
+/* Add more space before Results card */
+.card {
+  margin-top: 22px !important;
+}
+
+/* Footer links: lighter and cleaner */
+.footerLinks a {
+  text-decoration: none;
+  opacity: 0.78;
+}
+.footerLinks a:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
