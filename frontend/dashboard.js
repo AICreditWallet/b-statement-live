@@ -43,9 +43,9 @@ const focusText = $("focusText");
 // ✅ KPI elements (must exist in dashboard.html)
 const kpiMonthlySpend = $("kpiMonthlySpend");
 const kpiMonthlyDelta = $("kpiMonthlyDelta");
-const kpiLeakValue = $("kpiLeakValue");
-const kpiLeakTitle = $("kpiLeakTitle");
-const kpiVatTotal = $("kpiVatTotal");
+const kpiLeak = $("kpiLeak");
+const kpiLeakSub = $("kpiLeakSub");
+const kpiVat = $("kpiVat");
 
 // Modal
 const modalOverlay = $("modalOverlay");
@@ -324,6 +324,115 @@ function renderLeaderboard(history) {
       ? `Biggest supplier: ${top.displayName}. Watch the next invoice for increases.`
       : "—";
   }
+}
+// ----- KPI calculations + render -----
+function sum(arr) {
+  return arr.reduce((a, b) => a + (Number(b) || 0), 0);
+}
+
+function monthKey(d = new Date()) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
+}
+
+function getInvoiceMonth(inv) {
+  // inv.date is YYYY-MM-DD
+  const d = (inv?.date || "").slice(0, 7);
+  return d && d.length === 7 ? d : monthKey(new Date());
+}
+
+function computeMonthlySpend(invoices, whichMonth) {
+  const monthInvoices = invoices.filter((inv) => getInvoiceMonth(inv) === whichMonth);
+  const totals = monthInvoices.map((inv) => Number(inv.total) || 0);
+  return sum(totals);
+}
+
+function computeVatEstimate(invoices, whichMonth) {
+  // Simple VAT estimate: assumes totals include VAT, and uses 20% VAT rate.
+  // VAT portion of a VAT-inclusive total: total * (rate / (1 + rate))
+  const rate = 0.2;
+  const total = computeMonthlySpend(invoices, whichMonth);
+  return total * (rate / (1 + rate));
+}
+
+function computeTopLeak(invoices, whichMonth) {
+  // Biggest positive change vs previous invoice for same supplier within this month.
+  // Uses stored changeText if it’s a +£ value, otherwise recomputes from history in invoices list.
+
+  const monthInvoices = invoices.filter((inv) => getInvoiceMonth(inv) === whichMonth);
+
+  // Group by supplier (newest first already if invoices is newest-first)
+  const bySupplier = {};
+  for (const inv of monthInvoices.slice().reverse()) {
+    // reverse -> oldest to newest for easier comparison
+    const s = supplierKey(inv.supplier || "unknown");
+    bySupplier[s] ||= [];
+    bySupplier[s].push(inv);
+  }
+
+  let best = null; // {supplier, diff, nowTotal, prevTotal}
+  for (const sKey in bySupplier) {
+    const list = bySupplier[sKey];
+    for (let i = 1; i < list.length; i++) {
+      const prev = Number(list[i - 1].total) || 0;
+      const now = Number(list[i].total) || 0;
+      const diff = now - prev;
+      if (diff > 0.01) {
+        if (!best || diff > best.diff) {
+          best = {
+            supplier: list[i].supplier || "Unknown supplier",
+            diff,
+            nowTotal: now,
+            prevTotal: prev,
+            currency: list[i].currency || "£",
+          };
+        }
+      }
+    }
+  }
+
+  return best; // can be null
+}
+
+function renderKpis(invoices) {
+  if (!kpiMonthlySpend || !kpiMonthlyDelta || !kpiLeak || !kpiLeakSub || !kpiVat) return;
+
+  const thisMonth = monthKey(new Date());
+  const lastMonthDate = new Date();
+  lastMonthDate.setMonth(lastMonthDate.getMonth() - 1);
+  const lastMonth = monthKey(lastMonthDate);
+
+  const curSpend = computeMonthlySpend(invoices, thisMonth);
+  const prevSpend = computeMonthlySpend(invoices, lastMonth);
+
+  // currency: pick latest invoice currency, fallback £
+  const currency = invoices?.[0]?.currency || "£";
+
+  kpiMonthlySpend.textContent = money(curSpend, currency);
+
+  if (prevSpend > 0) {
+    const pct = ((curSpend - prevSpend) / prevSpend) * 100;
+    const arrow = pct >= 0 ? "↑" : "↓";
+    kpiMonthlyDelta.textContent = `${arrow} ${Math.abs(pct).toFixed(1)}% vs last month`;
+  } else {
+    kpiMonthlyDelta.textContent = `vs last month —`;
+  }
+
+  const leak = computeTopLeak(invoices, thisMonth);
+  if (!leak) {
+    kpiLeak.textContent = "—";
+    kpiLeakSub.textContent = "No alerts yet";
+  } else {
+    kpiLeak.textContent = `+${money(leak.diff, leak.currency)}`;
+    const pct = leak.prevTotal > 0 ? ((leak.diff / leak.prevTotal) * 100) : null;
+    kpiLeakSub.textContent = pct
+      ? `${leak.supplier}: ${pct.toFixed(1)}% increase`
+      : `${leak.supplier}: price increase`;
+  }
+
+  const vat = computeVatEstimate(invoices, thisMonth);
+  kpiVat.textContent = money(vat, currency);
 }
 
 // ----- main -----
