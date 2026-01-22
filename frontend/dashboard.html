@@ -6,6 +6,10 @@
   <title>Dashboard • Supplier Price Watch</title>
 
   <link rel="stylesheet" href="./styles.css">
+
+  <!-- Chart.js must load before dashboard.js uses it -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
   <script type="module" defer src="./dashboard.js"></script>
 
   <style>
@@ -107,7 +111,6 @@
       max-width: 100%;
     }
     .small{ font-size:12px; opacity:.92; }
-
     #status{ margin-top:10px; font-size:13px; opacity:.95; min-height:18px; }
 
     table{ width:100%; border-collapse:collapse; margin-top:10px; }
@@ -118,7 +121,7 @@
     .grid2{ display:grid; grid-template-columns: 1.1fr .9fr; gap:16px; }
     @media(max-width: 980px){ .grid2{ grid-template-columns: 1fr; } }
 
-    /* --- Command Center KPI cards --- */
+    /* KPI cards */
     .kpiRow{
       display:grid;
       grid-template-columns: repeat(3, 1fr);
@@ -250,7 +253,6 @@
           <div class="kpiTitle">Top leak alert</div>
           <div class="kpiPill warn">Price hike</div>
         </div>
-        <!-- UPDATED IDs (more specific) -->
         <div class="kpiValue" id="kpiLeakValue">—</div>
         <div class="kpiSub" id="kpiLeakTitle">No alerts yet</div>
       </div>
@@ -260,12 +262,31 @@
           <div class="kpiTitle">VAT summary</div>
           <div class="kpiPill">Estimated</div>
         </div>
-        <!-- UPDATED ID -->
         <div class="kpiValue" id="kpiVatTotal">£—</div>
         <div class="kpiSub">Helps with quarterly filing</div>
       </div>
     </section>
 
+    <!-- Visual Trend Analytics (ONLY ONE charts section, unique IDs) -->
+    <section class="grid2" style="margin-top:16px;">
+      <div class="card">
+        <div style="font-weight:800; font-size:16px;">Spend velocity</div>
+        <div class="muted">Total spend by month (based on uploads).</div>
+        <div style="height:280px; margin-top:10px;">
+          <canvas id="spendVelocityChart"></canvas>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="font-weight:800; font-size:16px;">Category spending</div>
+        <div class="muted">Estimated split by category (demo until SKUs are extracted).</div>
+        <div style="height:280px; margin-top:10px;">
+          <canvas id="categoryDonutChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tables -->
     <section class="grid2">
       <div class="card">
         <div style="font-weight:800; font-size:16px;">Uploads (this account)</div>

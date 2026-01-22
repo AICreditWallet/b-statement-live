@@ -40,6 +40,134 @@ const invoicesTbody = document.querySelector("#invoicesTable tbody");
 const leaderTbody = document.querySelector("#leaderTable tbody");
 const focusText = $("focusText");
 
+// ----------------------
+// Charts (Chart.js)
+// ----------------------
+let spendChart = null;
+let categoryChart = null;
+
+function monthKeyFromISO(iso) {
+  // "2026-01-22" -> "2026-01"
+  if (!iso || typeof iso !== "string") return "";
+  return iso.slice(0, 7);
+}
+
+function monthLabel(yyyyMM) {
+  // "2026-01" -> "Jan 2026"
+  if (!yyyyMM) return "—";
+  const [y, m] = yyyyMM.split("-");
+  const dt = new Date(Number(y), Number(m) - 1, 1);
+  return dt.toLocaleString(undefined, { month: "short", year: "numeric" });
+}
+
+function buildMonthlySpendSeries(invoices) {
+  const map = new Map(); // key: yyyy-MM -> total
+  for (const inv of invoices || []) {
+    const k = monthKeyFromISO(inv.date);
+    if (!k) continue;
+    map.set(k, (map.get(k) || 0) + (Number(inv.total) || 0));
+  }
+
+  const keys = Array.from(map.keys()).sort(); // chronological
+  const labels = keys.map(monthLabel);
+  const values = keys.map((k) => Number((map.get(k) || 0).toFixed(2)));
+  return { keys, labels, values };
+}
+
+// Simple category guess (until we store SKU categories)
+function guessCategory(inv) {
+  const s = `${inv?.supplier || ""} ${inv?.filename || ""}`.toLowerCase();
+
+  // quick heuristics (edit later)
+  if (/(sainsbury|tesco|asda|aldi|lidl|marks|waitrose|co-?op)/.test(s)) return "Food";
+  if (/(tkmaxx|amazon|ebay|shop|store|retail)/.test(s)) return "Retail";
+  if (/(uber|bolt|taxi|fuel|petrol|shell|bp)/.test(s)) return "Logistics";
+  if (/(electric|water|utility|gas|octopus|edf|eon)/.test(s)) return "Utilities";
+
+  return "Other";
+}
+
+function buildCategoryTotals(invoices) {
+  const map = new Map(); // category -> total
+  for (const inv of invoices || []) {
+    const cat = guessCategory(inv);
+    map.set(cat, (map.get(cat) || 0) + (Number(inv.total) || 0));
+  }
+
+  const entries = Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
+  return {
+    labels: entries.map((e) => e[0]),
+    values: entries.map((e) => Number(e[1].toFixed(2))),
+  };
+}
+
+function updateCharts(invoices) {
+  // If Chart.js didn't load for some reason, skip safely
+  if (typeof Chart === "undefined") return;
+
+  const spendCanvas = document.getElementById("spendVelocityChart");
+  const catCanvas = document.getElementById("categoryDonutChart");
+  if (!spendCanvas || !catCanvas) return;
+
+  // Destroy old charts before re-creating
+  if (spendChart) {
+    spendChart.destroy();
+    spendChart = null;
+  }
+  if (categoryChart) {
+    categoryChart.destroy();
+    categoryChart = null;
+  }
+
+  // Spend velocity (bar chart)
+  const monthly = buildMonthlySpendSeries(invoices);
+
+  spendChart = new Chart(spendCanvas, {
+    type: "bar",
+    data: {
+      labels: monthly.labels.length ? monthly.labels : ["No data"],
+      datasets: [
+        {
+          label: "Total spend",
+          data: monthly.values.length ? monthly.values : [0],
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: { enabled: true },
+      },
+      scales: {
+        y: { beginAtZero: true },
+      },
+    },
+  });
+
+  // Category donut
+  const cats = buildCategoryTotals(invoices);
+  categoryChart = new Chart(catCanvas, {
+    type: "doughnut",
+    data: {
+      labels: cats.labels.length ? cats.labels : ["No data"],
+      datasets: [
+        {
+          data: cats.values.length ? cats.values : [0],
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: "bottom" },
+      },
+      cutout: "68%",
+    },
+  });
+}
+
+
 // ✅ KPI elements (must exist in dashboard.html)
 const kpiMonthlySpend = $("kpiMonthlySpend");
 const kpiMonthlyDelta = $("kpiMonthlyDelta");
@@ -556,7 +684,7 @@ analyseAllBtn.addEventListener("click", async () => {
   renderInvoices(invoices);
   renderLeaderboard(history);
   updateKpis(invoices); // ✅ update KPI cards
-
+  updateCharts(invoices);
   setStatus("Done.");
 });
 
@@ -571,7 +699,7 @@ analyseAllBtn.addEventListener("click", async () => {
   renderInvoices(invoices);
   renderLeaderboard(history);
   updateKpis(invoices); // ✅ fill KPI on load
-
+  updateCharts(invoices);
   updateSelectionUI();
 
   console.log("Using API_BASE:", API_BASE);
