@@ -6,9 +6,6 @@ console.log("Dashboard JS loaded");
  * Backend base URL resolution:
  * - Local dev (localhost/127.0.0.1) -> http://127.0.0.1:8000
  * - Production (Vercel) -> your Railway backend URL
- *
- * NOTE: This is the simplest + most reliable setup for a static frontend.
- * If later you want environment variables, we can re-add them.
  */
 function resolveBackendApiBase() {
   const host = window.location.hostname;
@@ -42,6 +39,13 @@ const statusEl = $("status");
 const invoicesTbody = document.querySelector("#invoicesTable tbody");
 const leaderTbody = document.querySelector("#leaderTable tbody");
 const focusText = $("focusText");
+
+// ✅ KPI elements (must exist in dashboard.html)
+const kpiMonthlySpend = $("kpiMonthlySpend");
+const kpiMonthlyDelta = $("kpiMonthlyDelta");
+const kpiLeakValue = $("kpiLeakValue");
+const kpiLeakTitle = $("kpiLeakTitle");
+const kpiVatTotal = $("kpiVatTotal");
 
 // Modal
 const modalOverlay = $("modalOverlay");
@@ -101,6 +105,13 @@ function changeText(now, prev, currency = "£") {
   return diff > 0
     ? `+${money(diff, currency)}`
     : `-${money(Math.abs(diff), currency)}`;
+}
+
+function changePct(now, prev) {
+  const n = Number(now);
+  const p = Number(prev);
+  if (!Number.isFinite(n) || !Number.isFinite(p) || p <= 0) return null;
+  return ((n - p) / p) * 100;
 }
 
 function isoDate() {
@@ -188,6 +199,76 @@ function pickVendorFromBackendJSON(data) {
 
 function demoTotalFromFile(file) {
   return Math.max(1, Math.round(Number(file?.size || 0) / 100));
+}
+
+// ----- KPI logic -----
+function safeSetText(el, text) {
+  if (el) el.textContent = text;
+}
+
+function parseDateSafe(x) {
+  if (!x) return null;
+  const d = new Date(x);
+  if (isNaN(d)) return null;
+  return d;
+}
+
+function sumInvoicesForMonth(invoices, year, month) {
+  return invoices
+    .filter((inv) => {
+      const d = parseDateSafe(inv.date);
+      return d && d.getFullYear() === year && d.getMonth() === month;
+    })
+    .reduce((sum, inv) => sum + (Number(inv.total) || 0), 0);
+}
+
+function updateKpis(invoices) {
+  // If KPI nodes aren’t on the page, silently do nothing
+  if (!kpiMonthlySpend || !kpiMonthlyDelta || !kpiLeakValue || !kpiLeakTitle || !kpiVatTotal) return;
+
+  const now = new Date();
+  const thisYear = now.getFullYear();
+  const thisMonth = now.getMonth();
+  const lastMonthDate = new Date(thisYear, thisMonth - 1, 1);
+  const lastMonth = lastMonthDate.getMonth();
+  const lastMonthYear = lastMonthDate.getFullYear();
+
+  // Use GBP for KPI display (you can upgrade later to multi-currency)
+  const thisMonthSpend = sumInvoicesForMonth(invoices, thisYear, thisMonth);
+  const lastMonthSpend = sumInvoicesForMonth(invoices, lastMonthYear, lastMonth);
+
+  safeSetText(kpiMonthlySpend, money(thisMonthSpend, "GBP"));
+
+  if (lastMonthSpend > 0) {
+    const pct = ((thisMonthSpend - lastMonthSpend) / lastMonthSpend) * 100;
+    const arrow = pct >= 0 ? "↑" : "↓";
+    safeSetText(kpiMonthlyDelta, `${arrow} ${Math.abs(pct).toFixed(1)}% vs last month`);
+  } else {
+    safeSetText(kpiMonthlyDelta, "vs last month —");
+  }
+
+  // Leak alert: biggest % increase from invoice-to-invoice per supplier
+  let best = null;
+  for (const inv of invoices) {
+    const pct = Number(inv.changePct);
+    if (Number.isFinite(pct) && pct > 0) {
+      if (!best || pct > best.pct) {
+        best = { pct, supplier: inv.supplier || "Supplier" };
+      }
+    }
+  }
+
+  if (!best) {
+    safeSetText(kpiLeakValue, "—");
+    safeSetText(kpiLeakTitle, "No alerts yet");
+  } else {
+    safeSetText(kpiLeakValue, `↑ ${best.pct.toFixed(1)}%`);
+    safeSetText(kpiLeakTitle, `${best.supplier} price hike`);
+  }
+
+  // VAT estimate (20% of this month’s spend)
+  const vat = thisMonthSpend * 0.20;
+  safeSetText(kpiVatTotal, money(vat, "GBP"));
 }
 
 // ----- render -----
@@ -331,7 +412,9 @@ analyseAllBtn.addEventListener("click", async () => {
 
     const prev = history.suppliers[sKey];
     const prevTotal = prev?.lastInvoiceTotal ?? null;
+
     const chText = changeText(total, prevTotal, currency);
+    const pct = changePct(total, prevTotal); // ✅ used for leak KPI
 
     history.suppliers[sKey] = {
       displayName: supplierName,
@@ -349,6 +432,7 @@ analyseAllBtn.addEventListener("click", async () => {
       total,
       currency,
       changeText: chText,
+      changePct: pct, // ✅ store it
       source: usedBackend ? "backend" : "demo"
     });
   }
@@ -362,6 +446,7 @@ analyseAllBtn.addEventListener("click", async () => {
 
   renderInvoices(invoices);
   renderLeaderboard(history);
+  updateKpis(invoices); // ✅ update KPI cards
 
   setStatus("Done.");
 });
@@ -376,6 +461,7 @@ analyseAllBtn.addEventListener("click", async () => {
 
   renderInvoices(invoices);
   renderLeaderboard(history);
+  updateKpis(invoices); // ✅ fill KPI on load
 
   updateSelectionUI();
 
