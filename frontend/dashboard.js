@@ -5,7 +5,7 @@ console.log("Dashboard JS loaded");
 /**
  * Backend base URL resolution:
  * - Local dev (localhost/127.0.0.1) -> http://127.0.0.1:8000
- * - Production (Vercel) -> your Railway backend URL
+ * - Production (Vercel) -> Railway backend URL
  */
 function resolveBackendApiBase() {
   const host = window.location.hostname;
@@ -17,19 +17,19 @@ function resolveBackendApiBase() {
 
   if (isLocal) return "http://127.0.0.1:8000";
 
-  // ✅ Your deployed backend (Railway)
   return "https://b-statement-live-production.up.railway.app";
 }
 
 const API_BASE = resolveBackendApiBase().replace(/\/$/, "");
 const BACKEND_ANALYSE_URL = `${API_BASE}/analyse`;
-const BACKEND_ANALYZE_URL = `${API_BASE}/analyze`; // alias support
+const BACKEND_ANALYZE_URL = `${API_BASE}/analyze`;
 
-const REQUEST_TIMEOUT_MS = 90000; // 90 seconds
+const REQUEST_TIMEOUT_MS = 90000;
 const MAX_FILES = 10;
 
 const $ = (id) => document.getElementById(id);
 
+// ---- DOM ----
 const userLine = $("userLine");
 const filesInput = $("filesInput");
 const analyseAllBtn = $("analyseAllBtn");
@@ -40,140 +40,12 @@ const invoicesTbody = document.querySelector("#invoicesTable tbody");
 const leaderTbody = document.querySelector("#leaderTable tbody");
 const focusText = $("focusText");
 
-// ----------------------
-// Charts (Chart.js)
-// ----------------------
-let spendChart = null;
-let categoryChart = null;
-
-function monthKeyFromISO(iso) {
-  // "2026-01-22" -> "2026-01"
-  if (!iso || typeof iso !== "string") return "";
-  return iso.slice(0, 7);
-}
-
-function monthLabel(yyyyMM) {
-  // "2026-01" -> "Jan 2026"
-  if (!yyyyMM) return "—";
-  const [y, m] = yyyyMM.split("-");
-  const dt = new Date(Number(y), Number(m) - 1, 1);
-  return dt.toLocaleString(undefined, { month: "short", year: "numeric" });
-}
-
-function buildMonthlySpendSeries(invoices) {
-  const map = new Map(); // key: yyyy-MM -> total
-  for (const inv of invoices || []) {
-    const k = monthKeyFromISO(inv.date);
-    if (!k) continue;
-    map.set(k, (map.get(k) || 0) + (Number(inv.total) || 0));
-  }
-
-  const keys = Array.from(map.keys()).sort(); // chronological
-  const labels = keys.map(monthLabel);
-  const values = keys.map((k) => Number((map.get(k) || 0).toFixed(2)));
-  return { keys, labels, values };
-}
-
-// Simple category guess (until we store SKU categories)
-function guessCategory(inv) {
-  const s = `${inv?.supplier || ""} ${inv?.filename || ""}`.toLowerCase();
-
-  // quick heuristics (edit later)
-  if (/(sainsbury|tesco|asda|aldi|lidl|marks|waitrose|co-?op)/.test(s)) return "Food";
-  if (/(tkmaxx|amazon|ebay|shop|store|retail)/.test(s)) return "Retail";
-  if (/(uber|bolt|taxi|fuel|petrol|shell|bp)/.test(s)) return "Logistics";
-  if (/(electric|water|utility|gas|octopus|edf|eon)/.test(s)) return "Utilities";
-
-  return "Other";
-}
-
-function buildCategoryTotals(invoices) {
-  const map = new Map(); // category -> total
-  for (const inv of invoices || []) {
-    const cat = guessCategory(inv);
-    map.set(cat, (map.get(cat) || 0) + (Number(inv.total) || 0));
-  }
-
-  const entries = Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
-  return {
-    labels: entries.map((e) => e[0]),
-    values: entries.map((e) => Number(e[1].toFixed(2))),
-  };
-}
-
-function updateCharts(invoices) {
-  // If Chart.js didn't load for some reason, skip safely
-  if (typeof Chart === "undefined") return;
-
-  const spendCanvas = document.getElementById("spendVelocityChart");
-  const catCanvas = document.getElementById("categoryDonutChart");
-  if (!spendCanvas || !catCanvas) return;
-
-  // Destroy old charts before re-creating
-  if (spendChart) {
-    spendChart.destroy();
-    spendChart = null;
-  }
-  if (categoryChart) {
-    categoryChart.destroy();
-    categoryChart = null;
-  }
-
-  // Spend velocity (bar chart)
-  const monthly = buildMonthlySpendSeries(invoices);
-
-  spendChart = new Chart(spendCanvas, {
-    type: "bar",
-    data: {
-      labels: monthly.labels.length ? monthly.labels : ["No data"],
-      datasets: [
-        {
-          label: "Total spend",
-          data: monthly.values.length ? monthly.values : [0],
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { display: false },
-        tooltip: { enabled: true },
-      },
-      scales: {
-        y: { beginAtZero: true },
-      },
-    },
-  });
-
-  // Category donut
-  const cats = buildCategoryTotals(invoices);
-  categoryChart = new Chart(catCanvas, {
-    type: "doughnut",
-    data: {
-      labels: cats.labels.length ? cats.labels : ["No data"],
-      datasets: [
-        {
-          data: cats.values.length ? cats.values : [0],
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { position: "bottom" },
-      },
-      cutout: "68%",
-    },
-  });
-}
-
-
-// ✅ KPI elements (must exist in dashboard.html)
+// KPI nodes (match dashboard.html)
 const kpiMonthlySpend = $("kpiMonthlySpend");
 const kpiMonthlyDelta = $("kpiMonthlyDelta");
-const kpiLeak = $("kpiLeak");
-const kpiLeakSub = $("kpiLeakSub");
-const kpiVat = $("kpiVat");
+const kpiLeakValue = $("kpiLeakValue");
+const kpiLeakTitle = $("kpiLeakTitle");
+const kpiVatTotal = $("kpiVatTotal");
 
 // Modal
 const modalOverlay = $("modalOverlay");
@@ -186,6 +58,7 @@ const deleteAccountBtn = $("deleteAccountBtn");
 const logoutBtn = $("logoutBtn");
 const logoutBtn2 = $("logoutBtn2");
 
+// ---- helpers ----
 function setStatus(msg) {
   if (statusEl) statusEl.textContent = msg || "";
 }
@@ -226,13 +99,15 @@ function supplierKey(name) {
   return (name || "").toLowerCase().trim();
 }
 
+function isoDate() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 function changeText(now, prev, currency = "£") {
   if (prev == null) return "First time";
   const diff = now - prev;
   if (Math.abs(diff) < 0.01) return "No change";
-  return diff > 0
-    ? `+${money(diff, currency)}`
-    : `-${money(Math.abs(diff), currency)}`;
+  return diff > 0 ? `+${money(diff, currency)}` : `-${money(Math.abs(diff), currency)}`;
 }
 
 function changePct(now, prev) {
@@ -242,11 +117,11 @@ function changePct(now, prev) {
   return ((n - p) / p) * 100;
 }
 
-function isoDate() {
-  return new Date().toISOString().slice(0, 10);
+function demoTotalFromFile(file) {
+  return Math.max(1, Math.round(Number(file?.size || 0) / 100));
 }
 
-// ----- per-user storage keys -----
+// ---- per-user storage ----
 function invoicesKey(userId) {
   return `spw_invoices_${userId}`;
 }
@@ -267,7 +142,7 @@ function saveJSON(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
 }
 
-// ----- backend helpers -----
+// ---- backend ----
 async function fetchWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
   const controller = new AbortController();
   const t = setTimeout(() => controller.abort(), timeoutMs);
@@ -278,20 +153,11 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_M
   }
 }
 
-/**
- * Try /analyse first, then /analyze if needed.
- */
 async function postToBackend(formData) {
-  let res = await fetchWithTimeout(BACKEND_ANALYSE_URL, {
-    method: "POST",
-    body: formData
-  });
+  let res = await fetchWithTimeout(BACKEND_ANALYSE_URL, { method: "POST", body: formData });
 
   if (!res.ok && (res.status === 404 || res.status === 405)) {
-    res = await fetchWithTimeout(BACKEND_ANALYZE_URL, {
-      method: "POST",
-      body: formData
-    });
+    res = await fetchWithTimeout(BACKEND_ANALYZE_URL, { method: "POST", body: formData });
   }
 
   return res;
@@ -299,15 +165,7 @@ async function postToBackend(formData) {
 
 function pickTotalFromBackendJSON(data) {
   if (!data || typeof data !== "object") return null;
-
-  const candidates = [
-    data.total,
-    data.invoice_total,
-    data.amount,
-    data.total_amount,
-    data.total_gbp
-  ];
-
+  const candidates = [data.total, data.invoice_total, data.amount, data.total_amount, data.total_gbp];
   for (const c of candidates) {
     const n = Number(c);
     if (Number.isFinite(n) && n > 0) return n;
@@ -325,81 +183,7 @@ function pickVendorFromBackendJSON(data) {
   return data.vendor || data.merchant || data.supplier || null;
 }
 
-function demoTotalFromFile(file) {
-  return Math.max(1, Math.round(Number(file?.size || 0) / 100));
-}
-
-// ----- KPI logic -----
-function safeSetText(el, text) {
-  if (el) el.textContent = text;
-}
-
-function parseDateSafe(x) {
-  if (!x) return null;
-  const d = new Date(x);
-  if (isNaN(d)) return null;
-  return d;
-}
-
-function sumInvoicesForMonth(invoices, year, month) {
-  return invoices
-    .filter((inv) => {
-      const d = parseDateSafe(inv.date);
-      return d && d.getFullYear() === year && d.getMonth() === month;
-    })
-    .reduce((sum, inv) => sum + (Number(inv.total) || 0), 0);
-}
-
-function updateKpis(invoices) {
-  // If KPI nodes aren’t on the page, silently do nothing
-  if (!kpiMonthlySpend || !kpiMonthlyDelta || !kpiLeakValue || !kpiLeakTitle || !kpiVatTotal) return;
-
-  const now = new Date();
-  const thisYear = now.getFullYear();
-  const thisMonth = now.getMonth();
-  const lastMonthDate = new Date(thisYear, thisMonth - 1, 1);
-  const lastMonth = lastMonthDate.getMonth();
-  const lastMonthYear = lastMonthDate.getFullYear();
-
-  // Use GBP for KPI display (you can upgrade later to multi-currency)
-  const thisMonthSpend = sumInvoicesForMonth(invoices, thisYear, thisMonth);
-  const lastMonthSpend = sumInvoicesForMonth(invoices, lastMonthYear, lastMonth);
-
-  safeSetText(kpiMonthlySpend, money(thisMonthSpend, "GBP"));
-
-  if (lastMonthSpend > 0) {
-    const pct = ((thisMonthSpend - lastMonthSpend) / lastMonthSpend) * 100;
-    const arrow = pct >= 0 ? "↑" : "↓";
-    safeSetText(kpiMonthlyDelta, `${arrow} ${Math.abs(pct).toFixed(1)}% vs last month`);
-  } else {
-    safeSetText(kpiMonthlyDelta, "vs last month —");
-  }
-
-  // Leak alert: biggest % increase from invoice-to-invoice per supplier
-  let best = null;
-  for (const inv of invoices) {
-    const pct = Number(inv.changePct);
-    if (Number.isFinite(pct) && pct > 0) {
-      if (!best || pct > best.pct) {
-        best = { pct, supplier: inv.supplier || "Supplier" };
-      }
-    }
-  }
-
-  if (!best) {
-    safeSetText(kpiLeakValue, "—");
-    safeSetText(kpiLeakTitle, "No alerts yet");
-  } else {
-    safeSetText(kpiLeakValue, `↑ ${best.pct.toFixed(1)}%`);
-    safeSetText(kpiLeakTitle, `${best.supplier} price hike`);
-  }
-
-  // VAT estimate (20% of this month’s spend)
-  const vat = thisMonthSpend * 0.20;
-  safeSetText(kpiVatTotal, money(vat, "GBP"));
-}
-
-// ----- render -----
+// ---- render tables ----
 function renderInvoices(invoices) {
   if (!invoicesTbody) return;
   invoicesTbody.innerHTML = "";
@@ -432,6 +216,7 @@ function renderLeaderboard(history) {
 
   if (!suppliers.length) {
     leaderTbody.innerHTML = `<tr><td colspan="4" style="color:rgba(0,0,0,.6)">No history yet</td></tr>`;
+    if (focusText) focusText.textContent = "—";
     return;
   }
 
@@ -453,250 +238,26 @@ function renderLeaderboard(history) {
       : "—";
   }
 }
-// ----- KPI calculations + render -----
-function sum(arr) {
-  return arr.reduce((a, b) => a + (Number(b) || 0), 0);
+
+// ---- KPI logic ----
+function monthKeyFromISO(iso) {
+  if (!iso || typeof iso !== "string") return "";
+  return iso.slice(0, 7); // YYYY-MM
 }
 
-function monthKey(d = new Date()) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  return `${y}-${m}`;
+function sumInvoicesForMonth(invoices, yyyyMM) {
+  return (invoices || [])
+    .filter((inv) => monthKeyFromISO(inv.date) === yyyyMM)
+    .reduce((sum, inv) => sum + (Number(inv.total) || 0), 0);
 }
 
-function getInvoiceMonth(inv) {
-  // inv.date is YYYY-MM-DD
-  const d = (inv?.date || "").slice(0, 7);
-  return d && d.length === 7 ? d : monthKey(new Date());
-}
-
-function computeMonthlySpend(invoices, whichMonth) {
-  const monthInvoices = invoices.filter((inv) => getInvoiceMonth(inv) === whichMonth);
-  const totals = monthInvoices.map((inv) => Number(inv.total) || 0);
-  return sum(totals);
-}
-
-function computeVatEstimate(invoices, whichMonth) {
-  // Simple VAT estimate: assumes totals include VAT, and uses 20% VAT rate.
-  // VAT portion of a VAT-inclusive total: total * (rate / (1 + rate))
-  const rate = 0.2;
-  const total = computeMonthlySpend(invoices, whichMonth);
-  return total * (rate / (1 + rate));
-}
-
-function computeTopLeak(invoices, whichMonth) {
-  // Biggest positive change vs previous invoice for same supplier within this month.
-  // Uses stored changeText if it’s a +£ value, otherwise recomputes from history in invoices list.
-
-  const monthInvoices = invoices.filter((inv) => getInvoiceMonth(inv) === whichMonth);
-
-  // Group by supplier (newest first already if invoices is newest-first)
-  const bySupplier = {};
-  for (const inv of monthInvoices.slice().reverse()) {
-    // reverse -> oldest to newest for easier comparison
-    const s = supplierKey(inv.supplier || "unknown");
-    bySupplier[s] ||= [];
-    bySupplier[s].push(inv);
-  }
-
-  let best = null; // {supplier, diff, nowTotal, prevTotal}
-  for (const sKey in bySupplier) {
-    const list = bySupplier[sKey];
-    for (let i = 1; i < list.length; i++) {
-      const prev = Number(list[i - 1].total) || 0;
-      const now = Number(list[i].total) || 0;
-      const diff = now - prev;
-      if (diff > 0.01) {
-        if (!best || diff > best.diff) {
-          best = {
-            supplier: list[i].supplier || "Unknown supplier",
-            diff,
-            nowTotal: now,
-            prevTotal: prev,
-            currency: list[i].currency || "£",
-          };
-        }
-      }
-    }
-  }
-
-  return best; // can be null
-}
-
-function renderKpis(invoices) {
-  if (!kpiMonthlySpend || !kpiMonthlyDelta || !kpiLeak || !kpiLeakSub || !kpiVat) return;
-
-  const thisMonth = monthKey(new Date());
-  const lastMonthDate = new Date();
-  lastMonthDate.setMonth(lastMonthDate.getMonth() - 1);
-  const lastMonth = monthKey(lastMonthDate);
-
-  const curSpend = computeMonthlySpend(invoices, thisMonth);
-  const prevSpend = computeMonthlySpend(invoices, lastMonth);
-
-  // currency: pick latest invoice currency, fallback £
-  const currency = invoices?.[0]?.currency || "£";
-
-  kpiMonthlySpend.textContent = money(curSpend, currency);
-
-  if (prevSpend > 0) {
-    const pct = ((curSpend - prevSpend) / prevSpend) * 100;
-    const arrow = pct >= 0 ? "↑" : "↓";
-    kpiMonthlyDelta.textContent = `${arrow} ${Math.abs(pct).toFixed(1)}% vs last month`;
-  } else {
-    kpiMonthlyDelta.textContent = `vs last month —`;
-  }
-
-  const leak = computeTopLeak(invoices, thisMonth);
-  if (!leak) {
-    kpiLeak.textContent = "—";
-    kpiLeakSub.textContent = "No alerts yet";
-  } else {
-    kpiLeak.textContent = `+${money(leak.diff, leak.currency)}`;
-    const pct = leak.prevTotal > 0 ? ((leak.diff / leak.prevTotal) * 100) : null;
-    kpiLeakSub.textContent = pct
-      ? `${leak.supplier}: ${pct.toFixed(1)}% increase`
-      : `${leak.supplier}: price increase`;
-  }
-
-  const vat = computeVatEstimate(invoices, thisMonth);
-  kpiVat.textContent = money(vat, currency);
-}
-
-// ----- main -----
-const user = currentUser();
-if (!user) {
-  window.location.href = "./login.html";
-}
-
-userLine.textContent = `${user.name} • ${user.email}`;
-settingsName.textContent = user.name;
-settingsEmail.textContent = user.email;
-
-let selectedFiles = [];
-
-function updateSelectionUI() {
-  const count = selectedFiles.length;
-  if (countText) countText.textContent = `${count} / ${MAX_FILES} selected`;
-  if (analyseAllBtn) analyseAllBtn.disabled = count === 0;
-}
-
-filesInput.addEventListener("change", () => {
-  const files = Array.from(filesInput.files || []);
-
-  if (files.length > MAX_FILES) {
-    setStatus(`Too many files. Max is ${MAX_FILES}.`);
-    filesInput.value = "";
-    selectedFiles = [];
-    updateSelectionUI();
-    return;
-  }
-
-  selectedFiles = files;
-  setStatus(files.length ? `Selected ${files.length} file(s).` : "");
-  updateSelectionUI();
-});
-
-analyseAllBtn.addEventListener("click", async () => {
-  if (!selectedFiles.length) return;
-
-  setStatus("Analysing uploads…");
-
-  const invKey = invoicesKey(user.userId);
-  const histKey = historyKey(user.userId);
-
-  const invoices = loadJSON(invKey, []);
-  const history = loadJSON(histKey, { suppliers: {} });
-  history.suppliers ||= {};
-
-  for (let i = 0; i < selectedFiles.length; i++) {
-    const f = selectedFiles[i];
-    setStatus(`Analysing ${i + 1}/${selectedFiles.length}: ${f.name}`);
-
-    let supplierName = inferSupplierFromFilename(f.name);
-    let sKey = supplierKey(supplierName);
-
-    let usedBackend = false;
-    let total = null;
-    let currency = "£";
-
-    try {
-      const formData = new FormData();
-      formData.append("file", f);
-
-      const res = await postToBackend(formData);
-
-      if (res.ok) {
-        const data = await res.json();
-        const items = Array.isArray(data.items) ? data.items : [];
-
-        const backendVendor = pickVendorFromBackendJSON(data);
-        if (backendVendor) {
-          supplierName = backendVendor;
-          sKey = supplierKey(supplierName);
-        }
-
-        currency = pickCurrencyFromBackendJSON(data) || "£";
-        total = pickTotalFromBackendJSON(data);
-        usedBackend = true;
-
-        if (total == null) total = demoTotalFromFile(f);
-      } else {
-        total = demoTotalFromFile(f);
-      }
-    } catch {
-      total = demoTotalFromFile(f);
-    }
-
-    const prev = history.suppliers[sKey];
-    const prevTotal = prev?.lastInvoiceTotal ?? null;
-
-    const chText = changeText(total, prevTotal, currency);
-    const pct = changePct(total, prevTotal); // ✅ used for leak KPI
-
-    history.suppliers[sKey] = {
-      displayName: supplierName,
-      totalSpend: (prev?.totalSpend || 0) + total,
-      lastInvoiceTotal: total,
-      lastChangeText: chText,
-      currency
-    };
-
-    invoices.unshift({
-  id: crypto.randomUUID?.() || String(Date.now() + Math.random()),
-  date: isoDate(),
-  supplier: supplierName,
-  filename: f.name,
-  total,
-  currency,
-  changeText: chText,
-  source: usedBackend ? "backend" : "demo",
-  items // ✅ store line items from backend
-});
-
-  }
-
-  saveJSON(invKey, invoices);
-  saveJSON(histKey, history);
-
-  filesInput.value = "";
-  selectedFiles = [];
-  updateSelectionUI();
-
-  renderInvoices(invoices);
-  renderLeaderboard(history);
-  updateKpis(invoices); // ✅ update KPI cards
-  updateCharts(invoices);
-  setStatus("Done.");
-});
+// SKU leak: needs inv.items[] with {description, unit_price}.
+// Fallback: invoice-total leak based on inv.changePct.
 function computeTopLeak(invoices) {
-  // Track last seen unit price per supplier+item
   const lastPrice = {};
-  let best = null; // {pct, supplier, item, from, to}
+  let bestSku = null; // {pct, supplier, item, from, to}
 
-  // go oldest -> newest so "lastPrice" makes sense
-  const ordered = [...invoices].reverse();
-
+  const ordered = [...(invoices || [])].reverse(); // oldest -> newest
   for (const inv of ordered) {
     const supplier = inv.supplier || "Unknown Supplier";
     const sKey = supplierKey(supplier);
@@ -713,8 +274,8 @@ function computeTopLeak(invoices) {
 
       if (prev && unit > prev) {
         const pct = ((unit - prev) / prev) * 100;
-        if (!best || pct > best.pct) {
-          best = { pct, supplier, item: name, from: prev, to: unit };
+        if (!bestSku || pct > bestSku.pct) {
+          bestSku = { pct, supplier, item: name, from: prev, to: unit };
         }
       }
 
@@ -722,10 +283,281 @@ function computeTopLeak(invoices) {
     }
   }
 
-  return best;
+  if (bestSku) return { type: "sku", ...bestSku };
+
+  // fallback: biggest invoice-level changePct
+  let bestInv = null;
+  for (const inv of invoices || []) {
+    const pct = Number(inv.changePct);
+    if (Number.isFinite(pct) && pct > 0) {
+      if (!bestInv || pct > bestInv.pct) {
+        bestInv = { pct, supplier: inv.supplier || "Supplier" };
+      }
+    }
+  }
+  return bestInv ? { type: "invoice", ...bestInv } : null;
 }
 
-// Load existing data on page load
+function updateKpis(invoices) {
+  // If KPI nodes aren’t present, do nothing safely
+  if (!kpiMonthlySpend || !kpiMonthlyDelta || !kpiLeakValue || !kpiLeakTitle || !kpiVatTotal) return;
+
+  const now = new Date();
+  const thisYYYYMM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+  const last = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const lastYYYYMM = `${last.getFullYear()}-${String(last.getMonth() + 1).padStart(2, "0")}`;
+
+  const currency = invoices?.[0]?.currency || "GBP";
+
+  const thisSpend = sumInvoicesForMonth(invoices, thisYYYYMM);
+  const lastSpend = sumInvoicesForMonth(invoices, lastYYYYMM);
+
+  kpiMonthlySpend.textContent = money(thisSpend, currency);
+
+  if (lastSpend > 0) {
+    const pct = ((thisSpend - lastSpend) / lastSpend) * 100;
+    const arrow = pct >= 0 ? "↑" : "↓";
+    kpiMonthlyDelta.textContent = `${arrow} ${Math.abs(pct).toFixed(1)}% vs last month`;
+  } else {
+    kpiMonthlyDelta.textContent = "vs last month —";
+  }
+
+  const leak = computeTopLeak(invoices);
+  if (!leak) {
+    kpiLeakValue.textContent = "—";
+    kpiLeakTitle.textContent = "No alerts yet";
+  } else if (leak.type === "sku") {
+    kpiLeakValue.textContent = `↑ ${leak.pct.toFixed(1)}%`;
+    kpiLeakTitle.textContent = `${leak.supplier}: ${leak.item} (${money(leak.from, currency)} → ${money(leak.to, currency)})`;
+  } else {
+    kpiLeakValue.textContent = `↑ ${leak.pct.toFixed(1)}%`;
+    kpiLeakTitle.textContent = `${leak.supplier} price hike`;
+  }
+
+  // VAT estimate: VAT portion of VAT-inclusive totals @20% is total*(0.2/1.2)
+  const vat = thisSpend * (0.2 / 1.2);
+  kpiVatTotal.textContent = money(vat, currency);
+}
+
+// ---- Charts (Chart.js) ----
+let spendChart = null;
+let catChart = null;
+
+function monthLabel(yyyyMM) {
+  if (!yyyyMM) return "—";
+  const [y, m] = yyyyMM.split("-");
+  const dt = new Date(Number(y), Number(m) - 1, 1);
+  return dt.toLocaleString(undefined, { month: "short", year: "numeric" });
+}
+
+function buildMonthlySpendSeries(invoices) {
+  const map = new Map();
+  for (const inv of invoices || []) {
+    const k = monthKeyFromISO(inv.date);
+    if (!k) continue;
+    map.set(k, (map.get(k) || 0) + (Number(inv.total) || 0));
+  }
+  const keys = Array.from(map.keys()).sort();
+  return {
+    labels: keys.map(monthLabel),
+    values: keys.map((k) => Number((map.get(k) || 0).toFixed(2))),
+  };
+}
+
+function guessCategory(inv) {
+  const s = `${inv?.supplier || ""} ${inv?.filename || ""}`.toLowerCase();
+  if (/(sainsbury|tesco|asda|aldi|lidl|marks|waitrose|co-?op)/.test(s)) return "Food";
+  if (/(tkmaxx|amazon|ebay|shop|store|retail)/.test(s)) return "Retail";
+  if (/(uber|bolt|taxi|fuel|petrol|shell|bp)/.test(s)) return "Logistics";
+  if (/(electric|water|utility|gas|octopus|edf|eon)/.test(s)) return "Utilities";
+  return "Other";
+}
+
+function buildCategoryTotals(invoices) {
+  const map = new Map();
+  for (const inv of invoices || []) {
+    const cat = guessCategory(inv);
+    map.set(cat, (map.get(cat) || 0) + (Number(inv.total) || 0));
+  }
+  const entries = Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
+  return { labels: entries.map((e) => e[0]), values: entries.map((e) => Number(e[1].toFixed(2))) };
+}
+
+function updateCharts(invoices) {
+  if (typeof Chart === "undefined") return;
+
+  const spendCanvas = document.getElementById("spendVelocityChart");
+  const catCanvas = document.getElementById("categoryChart");
+  if (!spendCanvas || !catCanvas) return;
+
+  if (spendChart) { spendChart.destroy(); spendChart = null; }
+  if (catChart) { catChart.destroy(); catChart = null; }
+
+  const monthly = buildMonthlySpendSeries(invoices);
+  spendChart = new Chart(spendCanvas, {
+    type: "bar",
+    data: {
+      labels: monthly.labels.length ? monthly.labels : ["No data"],
+      datasets: [{ label: "Total spend", data: monthly.values.length ? monthly.values : [0] }],
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true } },
+    },
+  });
+
+  const cats = buildCategoryTotals(invoices);
+  catChart = new Chart(catCanvas, {
+    type: "doughnut",
+    data: {
+      labels: cats.labels.length ? cats.labels : ["No data"],
+      datasets: [{ data: cats.values.length ? cats.values : [0] }],
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: "bottom" } },
+      cutout: "68%",
+    },
+  });
+}
+
+// ---- main ----
+const user = currentUser();
+if (!user) {
+  window.location.href = "./login.html";
+}
+
+if (userLine) userLine.textContent = `${user.name} • ${user.email}`;
+if (settingsName) settingsName.textContent = user.name;
+if (settingsEmail) settingsEmail.textContent = user.email;
+
+let selectedFiles = [];
+
+function updateSelectionUI() {
+  const count = selectedFiles.length;
+  if (countText) countText.textContent = `${count} / ${MAX_FILES} selected`;
+  if (analyseAllBtn) analyseAllBtn.disabled = count === 0;
+}
+
+if (filesInput) {
+  filesInput.addEventListener("change", () => {
+    const files = Array.from(filesInput.files || []);
+
+    if (files.length > MAX_FILES) {
+      setStatus(`Too many files. Max is ${MAX_FILES}.`);
+      filesInput.value = "";
+      selectedFiles = [];
+      updateSelectionUI();
+      return;
+    }
+
+    selectedFiles = files;
+    setStatus(files.length ? `Selected ${files.length} file(s).` : "");
+    updateSelectionUI();
+  });
+}
+
+if (analyseAllBtn) {
+  analyseAllBtn.addEventListener("click", async () => {
+    if (!selectedFiles.length) return;
+
+    setStatus("Analysing uploads…");
+
+    const invKey = invoicesKey(user.userId);
+    const histKey = historyKey(user.userId);
+
+    const invoices = loadJSON(invKey, []);
+    const history = loadJSON(histKey, { suppliers: {} });
+    history.suppliers ||= {};
+
+    for (let i = 0; i < selectedFiles.length; i++) {
+      const f = selectedFiles[i];
+      setStatus(`Analysing ${i + 1}/${selectedFiles.length}: ${f.name}`);
+
+      let supplierName = inferSupplierFromFilename(f.name);
+      let sKey = supplierKey(supplierName);
+
+      let usedBackend = false;
+      let total = null;
+      let currency = "£";
+      let items = [];
+
+      try {
+        const formData = new FormData();
+        formData.append("file", f);
+
+        const res = await postToBackend(formData);
+
+        if (res.ok) {
+          const data = await res.json();
+
+          const backendVendor = pickVendorFromBackendJSON(data);
+          if (backendVendor) {
+            supplierName = backendVendor;
+            sKey = supplierKey(supplierName);
+          }
+
+          currency = pickCurrencyFromBackendJSON(data) || "£";
+          total = pickTotalFromBackendJSON(data);
+          items = Array.isArray(data.items) ? data.items : [];
+
+          usedBackend = true;
+          if (total == null) total = demoTotalFromFile(f);
+        } else {
+          total = demoTotalFromFile(f);
+        }
+      } catch (err) {
+        console.warn("Backend analyse failed, using demo total:", err);
+        total = demoTotalFromFile(f);
+      }
+
+      const prev = history.suppliers[sKey];
+      const prevTotal = prev?.lastInvoiceTotal ?? null;
+
+      const chText = changeText(total, prevTotal, currency);
+      const pct = changePct(total, prevTotal);
+
+      history.suppliers[sKey] = {
+        displayName: supplierName,
+        totalSpend: (prev?.totalSpend || 0) + total,
+        lastInvoiceTotal: total,
+        lastChangeText: chText,
+        currency,
+      };
+
+      invoices.unshift({
+        id: crypto.randomUUID?.() || String(Date.now() + Math.random()),
+        date: isoDate(),
+        supplier: supplierName,
+        filename: f.name,
+        total,
+        currency,
+        changeText: chText,
+        changePct: pct,
+        source: usedBackend ? "backend" : "demo",
+        items, // store SKU items if backend provided them
+      });
+    }
+
+    saveJSON(invKey, invoices);
+    saveJSON(histKey, history);
+
+    if (filesInput) filesInput.value = "";
+    selectedFiles = [];
+    updateSelectionUI();
+
+    renderInvoices(invoices);
+    renderLeaderboard(history);
+    updateKpis(invoices);
+    updateCharts(invoices);
+
+    setStatus("Done.");
+  });
+}
+
+// ---- init on load ----
 (function init() {
   const invKey = invoicesKey(user.userId);
   const histKey = historyKey(user.userId);
@@ -735,57 +567,49 @@ function computeTopLeak(invoices) {
 
   renderInvoices(invoices);
   renderLeaderboard(history);
-  updateKpis(invoices); // ✅ fill KPI on load
+  updateKpis(invoices);
   updateCharts(invoices);
   updateSelectionUI();
 
   console.log("Using API_BASE:", API_BASE);
 })();
-// ---- Top leak alert (biggest SKU price hike) ----
-const leak = computeTopLeak(invoices);
 
-if (kpiLeakValue && kpiLeakTitle) {
-  if (!leak) {
-    kpiLeakValue.textContent = "—";
-    kpiLeakTitle.textContent = "No alerts yet";
-  } else {
-    kpiLeakValue.textContent = `↑ ${leak.pct.toFixed(1)}%`;
-    kpiLeakTitle.textContent = `${leak.supplier}: ${leak.item} (${money(leak.from)} → ${money(leak.to)})`;
-  }
-}
-
-
-// ----- settings modal wiring -----
+// ---- settings modal wiring ----
 function openModal() {
-  modalOverlay.style.display = "flex";
+  if (modalOverlay) modalOverlay.style.display = "flex";
 }
 function closeModal() {
-  modalOverlay.style.display = "none";
+  if (modalOverlay) modalOverlay.style.display = "none";
 }
 
-settingsBtn.addEventListener("click", openModal);
-closeModalBtn.addEventListener("click", closeModal);
-modalOverlay.addEventListener("click", (e) => {
-  if (e.target === modalOverlay) closeModal();
-});
+if (settingsBtn) settingsBtn.addEventListener("click", openModal);
+if (closeModalBtn) closeModalBtn.addEventListener("click", closeModal);
+if (modalOverlay) {
+  modalOverlay.addEventListener("click", (e) => {
+    if (e.target === modalOverlay) closeModal();
+  });
+}
 
-logoutBtn.addEventListener("click", () => {
+function doLogout() {
   logout();
   window.location.href = "./login.html";
-});
-logoutBtn2.addEventListener("click", () => {
-  logout();
-  window.location.href = "./login.html";
-});
+}
 
-clearDataBtn.addEventListener("click", () => {
-  if (!confirm("Clear all invoices + history for this account on this device?")) return;
-  clearMyData(user.userId);
-  window.location.reload();
-});
+if (logoutBtn) logoutBtn.addEventListener("click", doLogout);
+if (logoutBtn2) logoutBtn2.addEventListener("click", doLogout);
 
-deleteAccountBtn.addEventListener("click", async () => {
-  if (!confirm("Delete account? This removes your account and local data on this device.")) return;
-  await deleteAccount();
-  window.location.href = "./register.html";
-});
+if (clearDataBtn) {
+  clearDataBtn.addEventListener("click", () => {
+    if (!confirm("Clear all invoices + history for this account on this device?")) return;
+    clearMyData(user.userId);
+    window.location.reload();
+  });
+}
+
+if (deleteAccountBtn) {
+  deleteAccountBtn.addEventListener("click", async () => {
+    if (!confirm("Delete account? This removes your account and local data on this device.")) return;
+    await deleteAccount();
+    window.location.href = "./register.html";
+  });
+}
