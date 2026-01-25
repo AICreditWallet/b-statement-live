@@ -56,7 +56,7 @@
       cursor:pointer;
       font-size:13px;
       line-height:1;
-      background:#0b1220;
+      background:var(--btn);
       color:#fff;
     }
     .btn.secondary {
@@ -75,7 +75,7 @@
       margin-top:16px;
       background:#fff;
       border-radius:18px;
-      box-shadow:0 12px 40px rgba(0,0,0,.08);
+      box-shadow:var(--shadow);
       padding:16px;
       border:1px solid rgba(0,0,0,.06);
     }
@@ -86,7 +86,7 @@
       border-radius:18px;
       background: linear-gradient(180deg, var(--brand1), var(--brand2));
       color:#fff;
-      box-shadow:0 20px 60px rgba(0,0,0,.10);
+      box-shadow:var(--shadow2);
       border: 1px solid rgba(255,255,255,.20);
     }
     .hero h1{ margin:0 0 8px; font-size: clamp(22px, 3vw, 32px); letter-spacing:-0.02em; }
@@ -267,7 +267,7 @@
       </div>
     </section>
 
-    <!-- Visual Trend Analytics (ONLY ONE charts section, unique IDs) -->
+    <!-- Visual Trend Analytics (IDs MUST match dashboard.js) -->
     <section class="grid2" style="margin-top:16px;">
       <div class="card">
         <div style="font-weight:800; font-size:16px;">Spend velocity</div>
@@ -281,7 +281,7 @@
         <div style="font-weight:800; font-size:16px;">Category spending</div>
         <div class="muted">Estimated split by category (demo until SKUs are extracted).</div>
         <div style="height:280px; margin-top:10px;">
-          <canvas id="categoryDonutChart"></canvas>
+          <canvas id="categoryChart"></canvas>
         </div>
       </div>
     </section>
