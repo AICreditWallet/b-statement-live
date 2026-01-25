@@ -628,6 +628,7 @@ analyseAllBtn.addEventListener("click", async () => {
 
       if (res.ok) {
         const data = await res.json();
+        const items = Array.isArray(data.items) ? data.items : [];
 
         const backendVendor = pickVendorFromBackendJSON(data);
         if (backendVendor) {
@@ -662,16 +663,17 @@ analyseAllBtn.addEventListener("click", async () => {
     };
 
     invoices.unshift({
-      id: crypto.randomUUID?.() || String(Date.now() + Math.random()),
-      date: isoDate(),
-      supplier: supplierName,
-      filename: f.name,
-      total,
-      currency,
-      changeText: chText,
-      changePct: pct, // ✅ store it
-      source: usedBackend ? "backend" : "demo"
-    });
+  id: crypto.randomUUID?.() || String(Date.now() + Math.random()),
+  date: isoDate(),
+  supplier: supplierName,
+  filename: f.name,
+  total,
+  currency,
+  changeText: chText,
+  source: usedBackend ? "backend" : "demo",
+  items // ✅ store line items from backend
+});
+
   }
 
   saveJSON(invKey, invoices);
@@ -687,6 +689,41 @@ analyseAllBtn.addEventListener("click", async () => {
   updateCharts(invoices);
   setStatus("Done.");
 });
+function computeTopLeak(invoices) {
+  // Track last seen unit price per supplier+item
+  const lastPrice = {};
+  let best = null; // {pct, supplier, item, from, to}
+
+  // go oldest -> newest so "lastPrice" makes sense
+  const ordered = [...invoices].reverse();
+
+  for (const inv of ordered) {
+    const supplier = inv.supplier || "Unknown Supplier";
+    const sKey = supplierKey(supplier);
+
+    const items = Array.isArray(inv.items) ? inv.items : [];
+    for (const it of items) {
+      const name = (it.description || "").trim();
+      const unit = Number(it.unit_price);
+
+      if (!name || !Number.isFinite(unit) || unit <= 0) continue;
+
+      const itemKey = `${sKey}::${name.toLowerCase()}`;
+      const prev = lastPrice[itemKey];
+
+      if (prev && unit > prev) {
+        const pct = ((unit - prev) / prev) * 100;
+        if (!best || pct > best.pct) {
+          best = { pct, supplier, item: name, from: prev, to: unit };
+        }
+      }
+
+      lastPrice[itemKey] = unit;
+    }
+  }
+
+  return best;
+}
 
 // Load existing data on page load
 (function init() {
@@ -704,6 +741,19 @@ analyseAllBtn.addEventListener("click", async () => {
 
   console.log("Using API_BASE:", API_BASE);
 })();
+// ---- Top leak alert (biggest SKU price hike) ----
+const leak = computeTopLeak(invoices);
+
+if (kpiLeakValue && kpiLeakTitle) {
+  if (!leak) {
+    kpiLeakValue.textContent = "—";
+    kpiLeakTitle.textContent = "No alerts yet";
+  } else {
+    kpiLeakValue.textContent = `↑ ${leak.pct.toFixed(1)}%`;
+    kpiLeakTitle.textContent = `${leak.supplier}: ${leak.item} (${money(leak.from)} → ${money(leak.to)})`;
+  }
+}
+
 
 // ----- settings modal wiring -----
 function openModal() {
