@@ -6,7 +6,6 @@
   <title>Supplier Price Watch</title>
 
   <link rel="stylesheet" href="./styles.css">
-  <script defer src="./supplier-price-watch.js"></script>
 
   <style>
     :root{
@@ -16,209 +15,192 @@
       --muted:#6b7280;
       --border:rgba(0,0,0,.08);
       --shadow:0 12px 40px rgba(0,0,0,.08);
-      --shadow2:0 22px 60px rgba(0,0,0,.10);
       --brand1: rgba(73,120,255,.92);
       --brand2: rgba(73,120,255,.80);
       --btn:#0b1220;
     }
 
     body{ background:var(--bg); color:var(--text); }
+    a{ color:inherit; text-decoration:none; }
+    .wrap{ max-width: 1100px; margin: 0 auto; padding: 22px 18px 70px; }
 
-    /* Layout */
-    .wrap { max-width: 1040px; margin: 0 auto; padding: 22px 18px 28px; }
-
-    /* Top bar */
-    .topBarSimple{
+    /* Top nav */
+    .topBar{
       display:flex;
       justify-content:space-between;
       align-items:center;
       gap:12px;
-      padding:16px 18px;
-      border-bottom:1px solid var(--border);
+      padding:14px 18px;
+      border-bottom:1px solid rgba(0,0,0,.08);
       background:#fff;
-      position:sticky;
-      top:0;
-      z-index:10;
+      position: sticky;
+      top: 0;
+      z-index: 10;
     }
-    .brandLeft{ display:flex; align-items:center; gap:12px; min-width: 240px; }
-    .topBarSimple .logo{ width:36px; height:36px; border-radius:10px; }
-    .topBarSimple .title{ font-weight:700; font-size:15px; margin:0; letter-spacing:-0.01em; }
-    .topBarSimple .subtitle{ font-size:12.5px; color:var(--muted); margin:2px 0 0; }
+    .brandLeft{ display:flex; align-items:center; gap:12px; }
+    .logo{ width:34px; height:34px; border-radius:10px; }
+    .title{ font-weight:900; font-size:16px; }
+    .subtitle{ font-size:12px; color:rgba(0,0,0,.6); margin-top:2px; }
 
-    .authArea{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-    .authLink{
-      font-weight:600;
-      text-decoration:none;
-      padding:10px 12px;
-      border-radius:999px;
-      border:1px solid rgba(0,0,0,.12);
-      background:#fff;
-      color:#0b1220;
-      font-size:13px;
-      line-height:1;
+    .navLinks{
+      display:flex; gap:14px; align-items:center; flex-wrap:wrap;
+      font-size:13px; color:rgba(0,0,0,.65);
     }
-    .authLink.primary{
-      background:var(--btn);
-      color:#fff;
-      border-color:transparent;
-    }
-    .authBtn{
-      font-weight:600;
-      padding:10px 12px;
+    .navLinks a{ padding:6px 8px; border-radius:10px; }
+    .navLinks a:hover{ background: rgba(0,0,0,.04); }
+
+    .actions{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .btn{
+      border:0;
       border-radius:999px;
-      border:1px solid rgba(0,0,0,.12);
-      background:#fff;
-      color:#0b1220;
-      font-size:13px;
+      padding:10px 14px;
+      font-weight:800;
       cursor:pointer;
-      line-height:1;
-    }
-    .userName{
-      font-weight:600;
       font-size:13px;
-      color:#0b1220;
-      max-width:220px;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      white-space:nowrap;
+      line-height:1;
+      background: var(--btn);
+      color:#fff;
+    }
+    .btn.secondary{
+      background:#fff;
+      color:var(--btn);
+      border:1px solid rgba(0,0,0,.12);
     }
 
     /* Hero */
     .hero{
       margin-top:18px;
-      padding:24px;
-      border-radius:18px;
+      padding:26px;
+      border-radius:20px;
       background: linear-gradient(180deg, var(--brand1), var(--brand2));
       color:#fff;
-      box-shadow: var(--shadow2);
-      border: 1px solid rgba(255,255,255,.22);
-    }
-    .heroInner{
-      max-width: 860px;
-      margin: 0 auto;
-      text-align:center;
+      box-shadow:0 20px 60px rgba(0,0,0,.10);
+      border: 1px solid rgba(255,255,255,.20);
     }
     .hero h1{
-      font-size: clamp(28px, 4vw, 44px);
-      line-height: 1.06;
-      margin: 0 0 10px;
-      letter-spacing: -0.03em;
+      margin:0 0 10px;
+      font-size: clamp(26px, 3.2vw, 40px);
+      letter-spacing:-0.03em;
+      font-weight: 900;
+      text-align:center;
     }
     .hero p{
-      margin:0 auto 16px;
-      font-size:14px;
+      margin:0 auto;
+      max-width: 780px;
       opacity:.95;
-      max-width: 60ch;
+      font-size:14px;
+      text-align:center;
+      line-height:1.45;
     }
 
-    /* Centered upload box */
-    .uploadCenter{
+    .heroCard{
+      margin: 18px auto 0;
+      max-width: 860px;
+      background: rgba(255,255,255,.16);
+      border: 1px solid rgba(255,255,255,.22);
+      border-radius: 18px;
+      padding: 16px;
+    }
+
+    .uploadRow{
       display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
       justify-content:center;
+      padding: 10px;
+      border-radius: 14px;
+    }
+
+    input[type="file"]{
+      background: rgba(255,255,255,.92);
+      border-radius: 12px;
+      padding: 10px;
+      border: 0;
+      width: min(520px, 100%);
+    }
+    .small{ font-size:12px; opacity:.92; text-align:center; margin-top:8px; }
+    #homeStatus{ margin-top:10px; font-size:13px; opacity:.95; min-height:18px; text-align:center; }
+
+    /* Sections */
+    .card{
+      margin-top:16px;
+      background:#fff;
+      border-radius:18px;
+      box-shadow: var(--shadow);
+      padding:18px;
+      border:1px solid rgba(0,0,0,.06);
+    }
+    .grid2{
+      display:grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap:16px;
+    }
+    @media(max-width: 980px){
+      .grid2{ grid-template-columns: 1fr; }
+      .navLinks{ display:none; }
+    }
+
+    .muted{ color: rgba(0,0,0,.62); font-size: 13px; }
+
+    /* Demo screenshots */
+    .shots{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
       margin-top:12px;
     }
-    .uploadBox{
-      width: min(760px, 100%);
-      background: rgba(255,255,255,.14);
-      border: 1px solid rgba(255,255,255,.22);
-      border-radius: 14px;
-      padding: 14px;
-      text-align:left;
+    @media(max-width: 980px){ .shots{ grid-template-columns: 1fr; } }
+    .shot{
+      border-radius:16px;
+      border:1px solid rgba(0,0,0,.08);
+      overflow:hidden;
+      background:#fff;
     }
-    .controls{
-      display:flex;
-      flex-wrap:wrap;
-      gap:10px;
-      align-items:center;
+    .shot img{
+      width:100%;
+      display:block;
+      height:auto;
     }
-    .controls label{ font-weight:600; font-size:13px; }
-    .controls input[type="file"]{
-      flex:1;
-      min-width: 240px;
-      background: rgba(255,255,255,.92);
-      border-radius: 10px;
-      padding: 8px;
-      border: 0;
-      max-width: 100%;
-    }
-    .btn{
-      border:0;
-      border-radius:999px;
-      padding:12px 16px;
-      font-weight:700;
-      cursor:pointer;
-      font-size:14px;
-      background:var(--btn);
-      color:#fff;
-      min-width:180px;
-      line-height:1;
-      white-space:nowrap;
-    }
-    .btn:disabled{ opacity:.55; cursor:not-allowed; box-shadow:none; }
-
-    #status{ margin-top:10px; font-size:13px; opacity:.92; min-height:18px; }
-    .muted{ color: var(--muted); font-size: 13px; }
-    .hidden{ display:none !important; }
-
-    /* Card */
-    .card{
-      margin-top:18px;
-      background:var(--card);
-      border-radius:18px;
-      box-shadow:var(--shadow);
-      padding:16px;
-      border: 1px solid rgba(0,0,0,.06);
-    }
-    .hr{ height:1px; background:rgba(0,0,0,.08); margin:14px 0; }
-
-    .kpis{ display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-top:12px; }
-    @media (max-width: 820px){ .kpis{ grid-template-columns: 1fr; } }
-    .kpi{
-      padding:12px;
-      border-radius:14px;
-      border:1px solid rgba(0,0,0,.07);
-      background:#fafbff;
-    }
-    .kpi .label{ font-size:12px; color:var(--muted); font-weight:600; }
-    .kpi .value{ font-size:18px; font-weight:800; margin-top:6px; color:var(--text); }
-
-    table{ width:100%; border-collapse:collapse; margin-top:8px; }
-    th, td{
-      padding:10px 8px;
-      border-bottom:1px solid rgba(0,0,0,.08);
+    .shotCap{
+      padding:10px 12px;
       font-size:13px;
-      text-align:left;
+      color: rgba(0,0,0,.70);
+      border-top:1px solid rgba(0,0,0,.06);
     }
-    th{ color:var(--muted); font-weight:700; }
 
-    /* Footer */
-    .footer{
-      margin: 18px auto 0;
-      padding: 10px 0 18px;
-      text-align:center;
-      color:var(--muted);
-    }
-    .footerLinks{
-      display:flex;
-      justify-content:center;
+    /* Pricing */
+    .pricingGrid{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
       gap:14px;
-      flex-wrap:wrap;
-      margin-bottom:8px;
+      margin-top: 12px;
     }
-    .footerLinks a{
-      color:var(--muted);
-      text-decoration:none;
-      font-size:13px;
-      font-weight:500;
+    @media(max-width: 980px){ .pricingGrid{ grid-template-columns: 1fr; } }
+    .priceCard{
+      border:1px solid rgba(0,0,0,.08);
+      border-radius:18px;
+      padding:16px;
+      background:#fff;
+      box-shadow: 0 12px 40px rgba(0,0,0,.06);
     }
-    .footerLinks a:hover{ text-decoration:underline; }
-    .footerNote{ font-size:12.5px; }
+    .priceTitle{ font-weight:900; font-size:14px; }
+    .priceTag{ margin-top:8px; font-size:28px; font-weight:900; letter-spacing:-0.02em; }
+    .priceSub{ margin-top:6px; color:rgba(0,0,0,.6); font-size:13px; }
+    .priceList{ margin:12px 0 0; padding-left:18px; color:rgba(0,0,0,.75); font-size:13px; }
+    .priceList li{ margin:8px 0; }
 
+    .footer{
+      margin-top:22px;
+      text-align:center;
+      color: rgba(0,0,0,.55);
+      font-size: 13px;
+    }
   </style>
 </head>
 
 <body>
-  <header class="topBarSimple">
+  <header class="topBar">
     <div class="brandLeft">
       <img class="logo" src="./assets/logo.png" alt="B" />
       <div>
@@ -227,121 +209,161 @@
       </div>
     </div>
 
-    <div id="authArea" class="authArea">
-      <a class="authLink" href="./login.html">Login</a>
-      <a class="authLink primary" href="./register.html">Create account</a>
+    <nav class="navLinks">
+      <a href="#pricing">Pricing</a>
+      <a href="#how">How it works</a>
+      <a href="#preview">Preview</a>
+    </nav>
+
+    <div class="actions">
+      <a class="btn secondary" href="./login.html">Login</a>
+      <a class="btn" href="./register.html">Create account</a>
     </div>
   </header>
 
   <main class="wrap">
+
+    <!-- HERO -->
     <section class="hero">
-      <div class="heroInner">
-        <h1>Track supplier invoice totals</h1>
-        <p>Upload a supplier invoice (PDF or photo) and analyse it. Sign in to unlock invoice analysis.</p>
+      <h1>Track supplier invoice totals</h1>
+      <p>
+        See monthly spend, supplier concentration, and early “price hike” alerts.
+        To keep your data private, analysis continues after you log in.
+      </p>
 
-        <div class="uploadCenter">
-          <div class="uploadBox">
-            <div class="controls">
-              <label for="invoiceFile">Invoice</label>
-              <input id="invoiceFile" type="file" accept="application/pdf,image/*" />
-              <button id="analyseBtn" class="btn" disabled>Analyse</button>
-            </div>
+      <div class="heroCard">
+        <div class="uploadRow">
+          <input id="homeFile" type="file" accept="application/pdf,image/*" />
+          <button id="homeAnalyse" class="btn">Analyse</button>
+        </div>
+        <div class="small" id="fileHint">Choose a file to see how it works (demo).</div>
+        <div id="homeStatus"></div>
+      </div>
+    </section>
 
-            <div id="status"></div>
-            <div class="muted" style="margin-top:6px;">Tip: Login first to enable the Analyse button.</div>
+    <!-- HOW IT WORKS -->
+    <section class="card" id="how">
+      <div style="font-weight:900; font-size:16px;">How it works</div>
+      <div class="muted" style="margin-top:6px;">
+        1) Upload invoices/receipts &nbsp;→&nbsp; 2) We extract totals & vendor &nbsp;→&nbsp;
+        3) Dashboard shows trends, categories, and changes over time.
+      </div>
+      <div class="muted" style="margin-top:10px;">
+        You’ll be asked to log in before analysis so each business keeps its own private history.
+      </div>
+    </section>
+
+    <!-- PREVIEW / RESULTS -->
+    <section class="card" id="preview">
+      <div style="font-weight:900; font-size:16px;">Preview</div>
+      <div class="muted" style="margin-top:6px;">
+        This is what you’ll see inside the dashboard after login.
+      </div>
+
+      <div class="shots">
+        <div class="shot">
+          <img src="./assets/demo-dashboard-1.png" alt="Dashboard preview 1">
+          <div class="shotCap">Command Center KPIs + charts (spend velocity & category split)</div>
+        </div>
+        <div class="shot">
+          <img src="./assets/demo-dashboard-2.png" alt="Dashboard preview 2">
+          <div class="shotCap">Uploads table + supplier leaderboard (share of wallet)</div>
+        </div>
+      </div>
+
+      <div class="muted" style="margin-top:12px;">
+        Want to try it? Create an account and upload your first receipts.
+      </div>
+    </section>
+
+    <!-- PRICING -->
+    <section class="card" id="pricing">
+      <div style="font-weight:900; font-size:16px;">Pricing</div>
+      <div class="muted" style="margin-top:6px;">
+        Simple plans for small businesses. Start with the MVP, upgrade later.
+      </div>
+
+      <div class="pricingGrid">
+        <div class="priceCard">
+          <div class="priceTitle">Starter</div>
+          <div class="priceTag">£9<span style="font-size:14px; font-weight:800;">/mo</span></div>
+          <div class="priceSub">For solo operators</div>
+          <ul class="priceList">
+            <li>Monthly spend + supplier leaderboard</li>
+            <li>Basic trend charts</li>
+            <li>Up to 100 uploads / month</li>
+          </ul>
+          <div style="margin-top:14px;">
+            <a class="btn" href="./register.html">Start Starter</a>
+          </div>
+        </div>
+
+        <div class="priceCard" style="border-color: rgba(73,120,255,.35); box-shadow: 0 18px 60px rgba(73,120,255,.18);">
+          <div class="priceTitle">Growth</div>
+          <div class="priceTag">£29<span style="font-size:14px; font-weight:800;">/mo</span></div>
+          <div class="priceSub">For growing teams</div>
+          <ul class="priceList">
+            <li>Everything in Starter</li>
+            <li>Price change alerts</li>
+            <li>Up to 500 uploads / month</li>
+          </ul>
+          <div style="margin-top:14px;">
+            <a class="btn" href="./register.html">Start Growth</a>
+          </div>
+        </div>
+
+        <div class="priceCard">
+          <div class="priceTitle">Pro</div>
+          <div class="priceTag">£79<span style="font-size:14px; font-weight:800;">/mo</span></div>
+          <div class="priceSub">For multi-location ops</div>
+          <ul class="priceList">
+            <li>Everything in Growth</li>
+            <li>Multi-user access</li>
+            <li>Priority support</li>
+          </ul>
+          <div style="margin-top:14px;">
+            <a class="btn" href="./register.html">Start Pro</a>
           </div>
         </div>
       </div>
     </section>
 
-    <section class="card">
-      <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start; flex-wrap:wrap;">
-        <div>
-          <div style="font-weight:800; font-size: 16px;">Results</div>
-          <div class="muted" id="resultsHint">Login to analyse invoices.</div>
-        </div>
-        <span id="alertPill" class="hidden"></span>
-      </div>
+    <div class="footer">
+      © 2026 Supplier Price Watch • <a href="./privacy.html">Privacy</a> • <a href="./terms.html">Terms</a>
+    </div>
 
-      <div id="resultsWrap" class="hidden">
-        <div class="hr"></div>
-
-        <div>
-          <div style="font-weight:800; font-size: 18px;" id="resultsSupplier">—</div>
-          <div class="muted" id="resultsMeta">—</div>
-        </div>
-
-        <div class="kpis">
-          <div class="kpi">
-            <div class="label">Invoice total</div>
-            <div class="value" id="kpiTotal">£0.00</div>
-          </div>
-          <div class="kpi">
-            <div class="label">Change vs last invoice</div>
-            <div class="value" id="kpiChange">—</div>
-          </div>
-          <div class="kpi">
-            <div class="label">Biggest supplier</div>
-            <div class="value" id="kpiBiggest">—</div>
-          </div>
-        </div>
-
-        <div class="hr"></div>
-
-        <div style="font-weight:800; margin-bottom: 6px;">Supplier leaderboard</div>
-        <table id="leaderTable">
-          <thead>
-            <tr>
-              <th>Supplier</th>
-              <th>Total spend</th>
-              <th>Last invoice</th>
-              <th>Last change</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-
-        <div class="hr"></div>
-
-        <div style="font-weight:800; margin-bottom: 6px;">Focus</div>
-        <div class="muted" id="focusText"></div>
-
-        <div class="muted" style="margin-top:10px;">
-          Note: This MVP stores results on this device for now.
-        </div>
-      </div>
-    </section>
-
-    <footer class="footer">
-      <div class="footerLinks">
-        <a href="./privacy.html">Privacy policy</a>
-        <a href="./terms.html">Terms</a>
-        <a href="./security.html">Security</a>
-        <a href="./access.html">Access control</a>
-      </div>
-      <div class="footerNote">© <span id="year"></span> Supplier Price Watch</div>
-    </footer>
   </main>
 
-  <!-- Auth UI: swap buttons to username + logout when logged in -->
-  <script type="module">
-    import { currentUser, logout } from "./auth.js";
+  <script>
+    // Home page demo behaviour:
+    // - Choose file works (shows selected filename)
+    // - Analyse redirects to login/register to continue
+    const homeFile = document.getElementById("homeFile");
+    const homeAnalyse = document.getElementById("homeAnalyse");
+    const fileHint = document.getElementById("fileHint");
+    const homeStatus = document.getElementById("homeStatus");
 
-    document.getElementById("year").textContent = new Date().getFullYear();
+    homeFile.addEventListener("change", () => {
+      const f = homeFile.files && homeFile.files[0];
+      if (!f) {
+        fileHint.textContent = "Choose a file to see how it works (demo).";
+        return;
+      }
+      fileHint.textContent = `Selected: ${f.name}`;
+      homeStatus.textContent = "";
+    });
 
-    const authArea = document.getElementById("authArea");
-    const user = currentUser();
+    homeAnalyse.addEventListener("click", () => {
+      const f = homeFile.files && homeFile.files[0];
+      homeStatus.textContent = f
+        ? "To analyse this file, please log in or create an account…"
+        : "Please choose a file first. Then you’ll be asked to log in to continue…";
 
-    if (user && authArea) {
-      authArea.innerHTML = `
-        <span class="userName">${user.name}</span>
-        <button id="logoutBtn" class="authBtn">Logout</button>
-      `;
-      document.getElementById("logoutBtn").addEventListener("click", () => {
-        logout();
-        window.location.reload();
-      });
-    }
+      // Redirect to login (you can switch this to register.html if you prefer)
+      setTimeout(() => {
+        window.location.href = "./login.html";
+      }, 350);
+    });
   </script>
 </body>
 </html>
