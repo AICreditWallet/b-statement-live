@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Supplier Price Watch</title>
 
-  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./styles.css" />
 
   <style>
     :root{
@@ -15,17 +15,18 @@
       --muted:#6b7280;
       --border:rgba(0,0,0,.08);
       --shadow:0 12px 40px rgba(0,0,0,.08);
+      --shadow2:0 22px 60px rgba(0,0,0,.10);
       --brand1: rgba(73,120,255,.92);
       --brand2: rgba(73,120,255,.80);
       --btn:#0b1220;
     }
 
     body{ background:var(--bg); color:var(--text); }
-    a{ color:inherit; text-decoration:none; }
-    .wrap{ max-width: 1100px; margin: 0 auto; padding: 22px 18px 70px; }
 
-    /* Top nav */
-    .topBar{
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 22px 18px 70px; }
+
+    /* Top Bar */
+    .topBar {
       display:flex;
       justify-content:space-between;
       align-items:center;
@@ -37,165 +38,366 @@
       top: 0;
       z-index: 10;
     }
-    .brandLeft{ display:flex; align-items:center; gap:12px; }
+    .brandLeft{ display:flex; align-items:center; gap:12px; min-width: 260px; }
     .logo{ width:34px; height:34px; border-radius:10px; }
-    .title{ font-weight:900; font-size:16px; }
+    .brandText{ display:flex; flex-direction:column; }
+    .title{ font-weight:900; font-size:16px; letter-spacing:-0.01em; }
     .subtitle{ font-size:12px; color:rgba(0,0,0,.6); margin-top:2px; }
 
-    .navLinks{
-      display:flex; gap:14px; align-items:center; flex-wrap:wrap;
-      font-size:13px; color:rgba(0,0,0,.65);
+    .nav{
+      display:flex;
+      gap:18px;
+      align-items:center;
+      justify-content:center;
+      flex: 1;
     }
-    .navLinks a{ padding:6px 8px; border-radius:10px; }
-    .navLinks a:hover{ background: rgba(0,0,0,.04); }
+    .nav a{
+      text-decoration:none;
+      color: rgba(17,24,39,.72);
+      font-weight:650;
+      font-size:13px;
+      padding: 8px 10px;
+      border-radius: 999px;
+    }
+    .nav a:hover{ background: rgba(73,120,255,.08); color: rgba(17,24,39,.9); }
 
-    .actions{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-    .btn{
+    .actions{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end; min-width: 260px; }
+    .btn {
       border:0;
       border-radius:999px;
-      padding:10px 14px;
+      padding:10px 12px;
       font-weight:800;
       cursor:pointer;
       font-size:13px;
       line-height:1;
-      background: var(--btn);
+      background:#0b1220;
       color:#fff;
-    }
-    .btn.secondary{
-      background:#fff;
-      color:var(--btn);
-      border:1px solid rgba(0,0,0,.12);
-    }
-
-    /* Hero */
-    .hero{
-      margin-top:18px;
-      padding:26px;
-      border-radius:20px;
-      background: linear-gradient(180deg, var(--brand1), var(--brand2));
-      color:#fff;
-      box-shadow:0 20px 60px rgba(0,0,0,.10);
-      border: 1px solid rgba(255,255,255,.20);
-    }
-    .hero h1{
-      margin:0 0 10px;
-      font-size: clamp(26px, 3.2vw, 40px);
-      letter-spacing:-0.03em;
-      font-weight: 900;
-      text-align:center;
-    }
-    .hero p{
-      margin:0 auto;
-      max-width: 780px;
-      opacity:.95;
-      font-size:14px;
-      text-align:center;
-      line-height:1.45;
-    }
-
-    .heroCard{
-      margin: 18px auto 0;
-      max-width: 860px;
-      background: rgba(255,255,255,.16);
-      border: 1px solid rgba(255,255,255,.22);
-      border-radius: 18px;
-      padding: 16px;
-    }
-
-    .uploadRow{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
+      text-decoration:none;
+      display:inline-flex;
       align-items:center;
       justify-content:center;
-      padding: 10px;
-      border-radius: 14px;
+      gap:8px;
     }
-
-    input[type="file"]{
-      background: rgba(255,255,255,.92);
-      border-radius: 12px;
-      padding: 10px;
-      border: 0;
-      width: min(520px, 100%);
+    .btn.secondary {
+      background:#fff;
+      color:#0b1220;
+      border:1px solid rgba(0,0,0,.12);
     }
-    .small{ font-size:12px; opacity:.92; text-align:center; margin-top:8px; }
-    #homeStatus{ margin-top:10px; font-size:13px; opacity:.95; min-height:18px; text-align:center; }
+    .btn:disabled{ opacity:.55; cursor:not-allowed; }
 
-    /* Sections */
+    /* Cards / sections */
     .card{
       margin-top:16px;
       background:#fff;
       border-radius:18px;
       box-shadow: var(--shadow);
-      padding:18px;
+      padding:16px;
       border:1px solid rgba(0,0,0,.06);
     }
-    .grid2{
+
+    .hero{
+      margin-top:18px;
+      padding:22px;
+      border-radius:18px;
+      background: linear-gradient(180deg, var(--brand1), var(--brand2));
+      color:#fff;
+      box-shadow: var(--shadow2);
+      border: 1px solid rgba(255,255,255,.20);
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::after{
+      content:"";
+      position:absolute;
+      inset:-60px -80px auto auto;
+      width: 260px;
+      height: 260px;
+      background: rgba(255,255,255,.10);
+      border-radius: 999px;
+      filter: blur(0px);
+      transform: rotate(15deg);
+    }
+    .heroGrid{
       display:grid;
-      grid-template-columns: 1.1fr .9fr;
+      grid-template-columns: 1.15fr .85fr;
       gap:16px;
+      align-items: start;
+      position: relative;
+      z-index: 1;
     }
-    @media(max-width: 980px){
-      .grid2{ grid-template-columns: 1fr; }
-      .navLinks{ display:none; }
+    @media (max-width: 980px){
+      .nav{ display:none; }
+      .heroGrid{ grid-template-columns: 1fr; }
+      .brandLeft, .actions{ min-width: auto; }
     }
 
-    .muted{ color: rgba(0,0,0,.62); font-size: 13px; }
+    .hero h1{
+      margin:0 0 10px;
+      font-size: clamp(28px, 3.6vw, 42px);
+      letter-spacing:-0.03em;
+      line-height: 1.05;
+    }
+    .hero p{ margin:0; opacity:.95; font-size:14px; max-width: 52ch; }
+    .heroBadges{ display:flex; flex-wrap:wrap; gap:10px; margin-top: 14px; }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.14);
+      border: 1px solid rgba(255,255,255,.22);
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
 
-    /* Demo screenshots */
-    .shots{
+    .uploadCard{
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.22);
+      border-radius: 16px;
+      padding: 14px;
+    }
+    .uploadRow{
+      margin-top:10px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      background: rgba(255,255,255,.14);
+      border: 1px solid rgba(255,255,255,.22);
+      border-radius: 14px;
+      padding: 12px;
+    }
+    input[type="file"]{
+      background: rgba(255,255,255,.92);
+      border-radius: 10px;
+      padding: 8px;
+      border: 0;
+      max-width: 100%;
+    }
+    .small{ font-size:12px; opacity:.92; }
+    #status{ margin-top:10px; font-size:13px; opacity:.95; min-height:18px; }
+
+    /* Section titles */
+    .sectionTitle{
+      font-weight:900;
+      font-size: 18px;
+      letter-spacing: -0.02em;
+      margin: 0;
+    }
+    .sectionSub{
+      margin: 6px 0 0;
+      color: rgba(17,24,39,.62);
+      font-size: 13px;
+    }
+
+    /* How it works diagram */
+    .howWrap{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      margin-top: 14px;
+    }
+    .steps{
+      display:grid;
+      grid-template-columns: 1fr 60px 1fr 60px 1fr;
+      gap: 10px;
+      align-items: stretch;
+    }
+    @media (max-width: 980px){
+      .steps{ grid-template-columns: 1fr; }
+      .arrow{ display:none; }
+    }
+
+    .stepCard{
+      border: 1px solid rgba(0,0,0,.08);
+      border-radius: 16px;
+      padding: 14px;
+      background: #fff;
+      box-shadow: 0 12px 30px rgba(0,0,0,.05);
+      display:flex;
+      gap: 12px;
+      align-items:flex-start;
+    }
+    .icon{
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: rgba(73,120,255,.12);
+      border: 1px solid rgba(73,120,255,.20);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex: none;
+    }
+    .stepTitle{
+      font-weight: 900;
+      margin: 0 0 4px;
+      font-size: 14px;
+    }
+    .stepText{
+      margin: 0;
+      color: rgba(17,24,39,.62);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    .arrow{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color: rgba(17,24,39,.35);
+    }
+
+    /* Preview */
+    .previewGrid{
       display:grid;
       grid-template-columns: 1fr 1fr;
-      gap:12px;
-      margin-top:12px;
+      gap: 14px;
+      margin-top: 14px;
     }
-    @media(max-width: 980px){ .shots{ grid-template-columns: 1fr; } }
+    @media (max-width: 980px){
+      .previewGrid{ grid-template-columns: 1fr; }
+    }
     .shot{
-      border-radius:16px;
-      border:1px solid rgba(0,0,0,.08);
+      border: 1px solid rgba(0,0,0,.08);
+      border-radius: 16px;
       overflow:hidden;
       background:#fff;
+      box-shadow: 0 12px 30px rgba(0,0,0,.05);
     }
     .shot img{
-      width:100%;
+      width: 100%;
+      height: auto;
       display:block;
-      height:auto;
     }
     .shotCap{
-      padding:10px 12px;
-      font-size:13px;
-      color: rgba(0,0,0,.70);
-      border-top:1px solid rgba(0,0,0,.06);
+      padding: 12px 12px 13px;
+      color: rgba(17,24,39,.75);
+      font-weight: 700;
+      font-size: 13px;
+      border-top: 1px solid rgba(0,0,0,.06);
     }
 
     /* Pricing */
+    .pricingTop{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .toggle{
+      display:inline-flex;
+      background: rgba(0,0,0,.04);
+      border: 1px solid rgba(0,0,0,.10);
+      border-radius: 999px;
+      padding: 4px;
+      gap: 4px;
+    }
+    .toggle button{
+      border:0;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-weight: 900;
+      font-size: 13px;
+      cursor:pointer;
+      background: transparent;
+      color: rgba(17,24,39,.72);
+    }
+    .toggle button.active{
+      background:#fff;
+      color:#0b1220;
+      box-shadow: 0 10px 22px rgba(0,0,0,.08);
+      border: 1px solid rgba(0,0,0,.08);
+    }
+
     .pricingGrid{
       display:grid;
       grid-template-columns: repeat(3, 1fr);
-      gap:14px;
-      margin-top: 12px;
+      gap: 14px;
+      margin-top: 14px;
     }
-    @media(max-width: 980px){ .pricingGrid{ grid-template-columns: 1fr; } }
-    .priceCard{
-      border:1px solid rgba(0,0,0,.08);
-      border-radius:18px;
-      padding:16px;
-      background:#fff;
-      box-shadow: 0 12px 40px rgba(0,0,0,.06);
+    @media (max-width: 980px){
+      .pricingGrid{ grid-template-columns: 1fr; }
     }
-    .priceTitle{ font-weight:900; font-size:14px; }
-    .priceTag{ margin-top:8px; font-size:28px; font-weight:900; letter-spacing:-0.02em; }
-    .priceSub{ margin-top:6px; color:rgba(0,0,0,.6); font-size:13px; }
-    .priceList{ margin:12px 0 0; padding-left:18px; color:rgba(0,0,0,.75); font-size:13px; }
-    .priceList li{ margin:8px 0; }
 
-    .footer{
-      margin-top:22px;
-      text-align:center;
-      color: rgba(0,0,0,.55);
-      font-size: 13px;
+    .plan{
+      border: 1px solid rgba(0,0,0,.08);
+      border-radius: 18px;
+      padding: 16px;
+      background:#fff;
+      box-shadow: 0 12px 30px rgba(0,0,0,.05);
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+      min-height: 280px;
     }
+    .plan.featured{
+      border-color: rgba(73,120,255,.40);
+      box-shadow: 0 18px 46px rgba(73,120,255,.10);
+    }
+    .planName{ font-weight: 950; font-size: 18px; letter-spacing:-0.02em; margin:0; }
+    .priceLine{
+      display:flex;
+      align-items:flex-end;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .price{
+      font-weight: 950;
+      font-size: 44px;
+      letter-spacing:-0.03em;
+      line-height: 1;
+      margin:0;
+    }
+    .per{
+      font-weight: 900;
+      color: rgba(17,24,39,.65);
+      margin-bottom: 6px;
+    }
+    .meta{
+      color: rgba(17,24,39,.62);
+      font-size: 13px;
+      margin: 0;
+    }
+    .saveTag{
+      display:inline-flex;
+      align-items:center;
+      gap: 6px;
+      font-weight: 900;
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(73,120,255,.10);
+      border: 1px solid rgba(73,120,255,.18);
+      color: rgba(17,24,39,.75);
+      width: fit-content;
+    }
+    .features{
+      margin: 6px 0 0;
+      padding: 0 0 0 18px;
+      color: rgba(17,24,39,.75);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+    .planCta{
+      margin-top: auto;
+      display:flex;
+      gap: 10px;
+      flex-wrap:wrap;
+    }
+
+    /* Footer */
+    .footer{
+      margin-top: 16px;
+      text-align:center;
+      color: rgba(17,24,39,.55);
+      font-size: 12px;
+    }
+    .footer a{ color: rgba(17,24,39,.55); text-decoration:none; margin: 0 8px; }
+    .footer a:hover{ text-decoration:underline; }
   </style>
 </head>
 
@@ -203,13 +405,13 @@
   <header class="topBar">
     <div class="brandLeft">
       <img class="logo" src="./assets/logo.png" alt="B" />
-      <div>
+      <div class="brandText">
         <div class="title">Supplier Price Watch</div>
         <div class="subtitle">Upload invoices. Track totals. Spot supplier price changes.</div>
       </div>
     </div>
 
-    <nav class="navLinks">
+    <nav class="nav" aria-label="Primary">
       <a href="#pricing">Pricing</a>
       <a href="#how">How it works</a>
       <a href="#preview">Preview</a>
@@ -222,148 +424,313 @@
   </header>
 
   <main class="wrap">
-
     <!-- HERO -->
     <section class="hero">
-      <h1>Track supplier invoice totals</h1>
-      <p>
-        See monthly spend, supplier concentration, and early “price hike” alerts.
-        To keep your data private, analysis continues after you log in.
-      </p>
+      <div class="heroGrid">
+        <div>
+          <h1>Know what you’re spending — and who’s raising prices.</h1>
+          <p>
+            Upload receipts or supplier invoices. We turn them into a clean dashboard with spend trends,
+            supplier leaderboard, and price-change signals.
+          </p>
 
-      <div class="heroCard">
-        <div class="uploadRow">
-          <input id="homeFile" type="file" accept="application/pdf,image/*" />
-          <button id="homeAnalyse" class="btn">Analyse</button>
+          <div class="heroBadges">
+            <span class="pill">
+              <!-- check icon -->
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M20 6L9 17l-5-5" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Fast setup (MVP)
+            </span>
+            <span class="pill">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 2l7 4v6c0 5-3 9-7 10C8 21 5 17 5 12V6l7-4z" stroke="white" stroke-width="2.2" stroke-linejoin="round"/>
+              </svg>
+              Per-account history
+            </span>
+            <span class="pill">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M4 19V5m0 14h16M8 15V9m4 6V7m4 8v-5" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
+              </svg>
+              Trends & charts
+            </span>
+          </div>
         </div>
-        <div class="small" id="fileHint">Choose a file to see how it works (demo).</div>
-        <div id="homeStatus"></div>
+
+        <div class="uploadCard">
+          <div style="font-weight:900; font-size:14px; margin-bottom:6px;">Try a sample upload</div>
+          <div style="opacity:.92; font-size:13px; line-height:1.35;">
+            Choose a file to enable the button. When you click Analyse, we’ll ask you to log in to view the dashboard.
+          </div>
+
+          <div class="uploadRow">
+            <input id="demoFile" type="file" accept="application/pdf,image/*" />
+            <button id="demoAnalyseBtn" class="btn" disabled>Analyse</button>
+            <span class="small" id="demoHint">Choose a file</span>
+          </div>
+          <div id="status"></div>
+
+          <div style="margin-top:10px; opacity:.9; font-size:12px;">
+            By continuing you agree to our
+            <a href="./privacy.html" style="color:#fff; text-decoration:underline;">Privacy</a>
+            and
+            <a href="./terms.html" style="color:#fff; text-decoration:underline;">Terms</a>.
+          </div>
+        </div>
       </div>
     </section>
 
-    <!-- HOW IT WORKS -->
-    <section class="card" id="how">
-      <div style="font-weight:900; font-size:16px;">How it works</div>
-      <div class="muted" style="margin-top:6px;">
-        1) Upload invoices/receipts &nbsp;→&nbsp; 2) We extract totals & vendor &nbsp;→&nbsp;
-        3) Dashboard shows trends, categories, and changes over time.
-      </div>
-      <div class="muted" style="margin-top:10px;">
-        You’ll be asked to log in before analysis so each business keeps its own private history.
+    <!-- HOW IT WORKS (visual) -->
+    <section id="how" class="card" style="scroll-margin-top:90px;">
+      <h2 class="sectionTitle">How it works</h2>
+      <p class="sectionSub">Three steps. Clear outputs. Designed for busy owners.</p>
+
+      <div class="howWrap">
+        <div class="steps">
+          <div class="stepCard">
+            <div class="icon" aria-hidden="true">
+              <!-- upload -->
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M12 16V4m0 0l-4 4m4-4l4 4" stroke="#3b5bff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M4 20h16" stroke="#3b5bff" stroke-width="2.2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div>
+              <p class="stepTitle">1) Upload invoices / receipts</p>
+              <p class="stepText">Add PDFs or photos. Each business keeps its own private upload history.</p>
+            </div>
+          </div>
+
+          <div class="arrow" aria-hidden="true">
+            <svg width="42" height="42" viewBox="0 0 24 24" fill="none">
+              <path d="M5 12h14m0 0l-5-5m5 5l-5 5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+
+          <div class="stepCard">
+            <div class="icon" aria-hidden="true">
+              <!-- scan -->
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M4 7V6a2 2 0 0 1 2-2h1M20 7V6a2 2 0 0 0-2-2h-1M4 17v1a2 2 0 0 0 2 2h1M20 17v1a2 2 0 0 1-2 2h-1" stroke="#3b5bff" stroke-width="2.2" stroke-linecap="round"/>
+                <path d="M8 12h8" stroke="#3b5bff" stroke-width="2.2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div>
+              <p class="stepTitle">2) Extract key fields</p>
+              <p class="stepText">We pull totals & supplier names now (SKUs/line-items can come next).</p>
+            </div>
+          </div>
+
+          <div class="arrow" aria-hidden="true">
+            <svg width="42" height="42" viewBox="0 0 24 24" fill="none">
+              <path d="M5 12h14m0 0l-5-5m5 5l-5 5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+
+          <div class="stepCard">
+            <div class="icon" aria-hidden="true">
+              <!-- dashboard -->
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M4 4h16v16H4V4z" stroke="#3b5bff" stroke-width="2.2" />
+                <path d="M8 16V10m4 6V7m4 9v-4" stroke="#3b5bff" stroke-width="2.2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div>
+              <p class="stepTitle">3) Dashboard shows insights</p>
+              <p class="stepText">Spend trends, supplier leaderboard, and alerts when prices move.</p>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
-    <!-- PREVIEW / RESULTS -->
-    <section class="card" id="preview">
-      <div style="font-weight:900; font-size:16px;">Preview</div>
-      <div class="muted" style="margin-top:6px;">
-        This is what you’ll see inside the dashboard after login.
-      </div>
+    <!-- PREVIEW -->
+    <section id="preview" class="card" style="scroll-margin-top:90px;">
+      <h2 class="sectionTitle">Preview</h2>
+      <p class="sectionSub">This is what you’ll see inside the dashboard after login.</p>
 
-      <div class="shots">
+      <div class="previewGrid">
         <div class="shot">
-          <img src="./assets/demo-dashboard-1.png" alt="Dashboard preview 1">
+          <img src="./assets/dashboard%20after%20login%201.png" alt="Dashboard preview: KPIs and charts" loading="lazy" />
           <div class="shotCap">Command Center KPIs + charts (spend velocity & category split)</div>
         </div>
+
         <div class="shot">
-          <img src="./assets/demo-dashboard-2.png" alt="Dashboard preview 2">
+          <img src="./assets/dashboard%20after%20login%202.png" alt="Dashboard preview: tables and leaderboard" loading="lazy" />
           <div class="shotCap">Uploads table + supplier leaderboard (share of wallet)</div>
         </div>
       </div>
 
-      <div class="muted" style="margin-top:12px;">
+      <div style="margin-top:12px; color:rgba(17,24,39,.65); font-size:13px;">
         Want to try it? Create an account and upload your first receipts.
       </div>
     </section>
 
     <!-- PRICING -->
-    <section class="card" id="pricing">
-      <div style="font-weight:900; font-size:16px;">Pricing</div>
-      <div class="muted" style="margin-top:6px;">
-        Simple plans for small businesses. Start with the MVP, upgrade later.
+    <section id="pricing" class="card" style="scroll-margin-top:90px;">
+      <h2 class="sectionTitle">Pricing</h2>
+      <div class="pricingTop">
+        <p class="sectionSub" style="margin:0;">Simple plans for small businesses. Switch to yearly to save 20%.</p>
+
+        <div class="toggle" role="tablist" aria-label="Billing period">
+          <button id="btnMonthly" class="active" type="button" role="tab" aria-selected="true">Monthly</button>
+          <button id="btnYearly" type="button" role="tab" aria-selected="false">Yearly <span style="opacity:.7;">(save 20%)</span></button>
+        </div>
       </div>
 
       <div class="pricingGrid">
-        <div class="priceCard">
-          <div class="priceTitle">Starter</div>
-          <div class="priceTag">£9<span style="font-size:14px; font-weight:800;">/mo</span></div>
-          <div class="priceSub">For solo operators</div>
-          <ul class="priceList">
+        <div class="plan" data-plan="starter" data-monthly="9" data-yearly="86">
+          <h3 class="planName">Starter</h3>
+
+          <div class="priceLine">
+            <p class="price" id="price-starter">£9</p>
+            <div class="per" id="per-starter">/mo</div>
+          </div>
+
+          <div class="saveTag" id="save-starter" style="display:none;">
+            Save 20% yearly
+          </div>
+
+          <p class="meta" id="meta-starter">For solo operators</p>
+          <ul class="features">
             <li>Monthly spend + supplier leaderboard</li>
             <li>Basic trend charts</li>
             <li>Up to 100 uploads / month</li>
           </ul>
-          <div style="margin-top:14px;">
+
+          <div class="planCta">
             <a class="btn" href="./register.html">Start Starter</a>
+            <a class="btn secondary" href="./login.html">Login</a>
           </div>
         </div>
 
-        <div class="priceCard" style="border-color: rgba(73,120,255,.35); box-shadow: 0 18px 60px rgba(73,120,255,.18);">
-          <div class="priceTitle">Growth</div>
-          <div class="priceTag">£29<span style="font-size:14px; font-weight:800;">/mo</span></div>
-          <div class="priceSub">For growing teams</div>
-          <ul class="priceList">
+        <div class="plan featured" data-plan="growth" data-monthly="29" data-yearly="278">
+          <h3 class="planName">Growth</h3>
+
+          <div class="priceLine">
+            <p class="price" id="price-growth">£29</p>
+            <div class="per" id="per-growth">/mo</div>
+          </div>
+
+          <div class="saveTag" id="save-growth" style="display:none;">
+            Save 20% yearly
+          </div>
+
+          <p class="meta" id="meta-growth">For growing teams</p>
+          <ul class="features">
             <li>Everything in Starter</li>
             <li>Price change alerts</li>
             <li>Up to 500 uploads / month</li>
           </ul>
-          <div style="margin-top:14px;">
+
+          <div class="planCta">
             <a class="btn" href="./register.html">Start Growth</a>
+            <a class="btn secondary" href="./login.html">Login</a>
           </div>
         </div>
 
-        <div class="priceCard">
-          <div class="priceTitle">Pro</div>
-          <div class="priceTag">£79<span style="font-size:14px; font-weight:800;">/mo</span></div>
-          <div class="priceSub">For multi-location ops</div>
-          <ul class="priceList">
+        <div class="plan" data-plan="pro" data-monthly="79" data-yearly="758">
+          <h3 class="planName">Pro</h3>
+
+          <div class="priceLine">
+            <p class="price" id="price-pro">£79</p>
+            <div class="per" id="per-pro">/mo</div>
+          </div>
+
+          <div class="saveTag" id="save-pro" style="display:none;">
+            Save 20% yearly
+          </div>
+
+          <p class="meta" id="meta-pro">For multi-location ops</p>
+          <ul class="features">
             <li>Everything in Growth</li>
             <li>Multi-user access</li>
             <li>Priority support</li>
           </ul>
-          <div style="margin-top:14px;">
+
+          <div class="planCta">
             <a class="btn" href="./register.html">Start Pro</a>
+            <a class="btn secondary" href="./login.html">Login</a>
           </div>
         </div>
       </div>
     </section>
 
     <div class="footer">
-      © 2026 Supplier Price Watch • <a href="./privacy.html">Privacy</a> • <a href="./terms.html">Terms</a>
+      <a href="./privacy.html">Privacy policy</a>
+      <a href="./terms.html">Terms</a>
+      <a href="./security.html">Security</a>
+      <a href="./access.html">Access control</a>
+      <div style="margin-top:8px;">© 2026 Supplier Price Watch</div>
     </div>
-
   </main>
 
   <script>
-    // Home page demo behaviour:
-    // - Choose file works (shows selected filename)
-    // - Analyse redirects to login/register to continue
-    const homeFile = document.getElementById("homeFile");
-    const homeAnalyse = document.getElementById("homeAnalyse");
-    const fileHint = document.getElementById("fileHint");
-    const homeStatus = document.getElementById("homeStatus");
+    // ---- Demo upload behaviour ----
+    const demoFile = document.getElementById("demoFile");
+    const demoAnalyseBtn = document.getElementById("demoAnalyseBtn");
+    const demoHint = document.getElementById("demoHint");
+    const status = document.getElementById("status");
 
-    homeFile.addEventListener("change", () => {
-      const f = homeFile.files && homeFile.files[0];
-      if (!f) {
-        fileHint.textContent = "Choose a file to see how it works (demo).";
-        return;
-      }
-      fileHint.textContent = `Selected: ${f.name}`;
-      homeStatus.textContent = "";
+    function setStatus(msg){ if(status) status.textContent = msg || ""; }
+
+    demoFile?.addEventListener("change", () => {
+      const f = demoFile.files && demoFile.files[0];
+      demoAnalyseBtn.disabled = !f;
+      demoHint.textContent = f ? "Ready to analyse" : "Choose a file";
+      setStatus(f ? `Selected: ${f.name}` : "");
     });
 
-    homeAnalyse.addEventListener("click", () => {
-      const f = homeFile.files && homeFile.files[0];
-      homeStatus.textContent = f
-        ? "To analyse this file, please log in or create an account…"
-        : "Please choose a file first. Then you’ll be asked to log in to continue…";
+    demoAnalyseBtn?.addEventListener("click", () => {
+      const f = demoFile.files && demoFile.files[0];
+      if (!f) return;
 
-      // Redirect to login (you can switch this to register.html if you prefer)
-      setTimeout(() => {
-        window.location.href = "./login.html";
-      }, 350);
+      // We can't carry the file through navigation, but we can store intent.
+      sessionStorage.setItem("spw_demo_selected", "1");
+      sessionStorage.setItem("spw_demo_filename", f.name);
+
+      // Redirect to login; after login you can route to dashboard.html
+      window.location.href = "./login.html?next=dashboard.html";
     });
+
+    // ---- Pricing toggle (monthly / yearly) ----
+    const btnMonthly = document.getElementById("btnMonthly");
+    const btnYearly = document.getElementById("btnYearly");
+
+    function setBilling(mode){
+      const plans = document.querySelectorAll(".plan[data-plan]");
+      plans.forEach(plan => {
+        const key = plan.getAttribute("data-plan");
+        const monthly = Number(plan.getAttribute("data-monthly") || 0);
+        const yearly = Number(plan.getAttribute("data-yearly") || 0);
+
+        const priceEl = document.getElementById(`price-${key}`);
+        const perEl = document.getElementById(`per-${key}`);
+        const saveEl = document.getElementById(`save-${key}`);
+
+        if (mode === "yearly"){
+          if (priceEl) priceEl.textContent = `£${yearly}`;
+          if (perEl) perEl.textContent = `/yr`;
+          if (saveEl) saveEl.style.display = "inline-flex";
+        } else {
+          if (priceEl) priceEl.textContent = `£${monthly}`;
+          if (perEl) perEl.textContent = `/mo`;
+          if (saveEl) saveEl.style.display = "none";
+        }
+      });
+
+      const isYearly = mode === "yearly";
+      btnMonthly.classList.toggle("active", !isYearly);
+      btnYearly.classList.toggle("active", isYearly);
+      btnMonthly.setAttribute("aria-selected", String(!isYearly));
+      btnYearly.setAttribute("aria-selected", String(isYearly));
+    }
+
+    btnMonthly?.addEventListener("click", () => setBilling("monthly"));
+    btnYearly?.addEventListener("click", () => setBilling("yearly"));
+
+    // Default
+    setBilling("monthly");
   </script>
 </body>
 </html>
