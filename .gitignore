@@ -16,3 +16,4 @@ uploads/
 backend/.env
 .env
 backend/.env
+frontend/assets/demo*.png
