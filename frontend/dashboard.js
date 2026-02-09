@@ -590,13 +590,17 @@ if (modalOverlay) {
   });
 }
 
-function doLogout() {
-  logout();
-  window.location.href = "./login.html";
+async function doLogout() {
+  try {
+    await logout();
+  } catch (e) {
+    console.warn(e);
+  }
+  window.location.href = "./index.html"; // or "./login.html" if you prefer
 }
 
-if (logoutBtn) logoutBtn.addEventListener("click", doLogout);
-if (logoutBtn2) logoutBtn2.addEventListener("click", doLogout);
+logoutBtn?.addEventListener("click", doLogout);
+logoutBtn2?.addEventListener("click", doLogout);
 
 if (clearDataBtn) {
   clearDataBtn.addEventListener("click", () => {
