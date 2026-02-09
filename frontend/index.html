@@ -417,9 +417,10 @@
       <a href="#preview">Preview</a>
     </nav>
 
+    <!-- ✅ FIXED: these must go to login/register (NOT dashboard) -->
     <div class="actions">
-      <a class="btn secondary" href="./login.html">Login</a>
-      <a class="btn" href="./register.html">Create account</a>
+      <a id="navLogin" class="btn secondary" href="./login.html">Login</a>
+      <a id="navRegister" class="btn" href="./register.html">Create account</a>
     </div>
   </header>
 
@@ -436,7 +437,6 @@
 
           <div class="heroBadges">
             <span class="pill">
-              <!-- check icon -->
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M20 6L9 17l-5-5" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
@@ -479,7 +479,7 @@
         </div>
       </div>
     </section>
-     
+
     <!-- PREVIEW -->
     <section id="preview" class="card" style="scroll-margin-top:90px;">
       <h2 class="sectionTitle">Preview</h2>
@@ -511,7 +511,6 @@
         <div class="steps">
           <div class="stepCard">
             <div class="icon" aria-hidden="true">
-              <!-- upload -->
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                 <path d="M12 16V4m0 0l-4 4m4-4l4 4" stroke="#3b5bff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
                 <path d="M4 20h16" stroke="#3b5bff" stroke-width="2.2" stroke-linecap="round"/>
@@ -531,7 +530,6 @@
 
           <div class="stepCard">
             <div class="icon" aria-hidden="true">
-              <!-- scan -->
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                 <path d="M4 7V6a2 2 0 0 1 2-2h1M20 7V6a2 2 0 0 0-2-2h-1M4 17v1a2 2 0 0 0 2 2h1M20 17v1a2 2 0 0 1-2 2h-1" stroke="#3b5bff" stroke-width="2.2" stroke-linecap="round"/>
                 <path d="M8 12h8" stroke="#3b5bff" stroke-width="2.2" stroke-linecap="round"/>
@@ -551,7 +549,6 @@
 
           <div class="stepCard">
             <div class="icon" aria-hidden="true">
-              <!-- dashboard -->
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                 <path d="M4 4h16v16H4V4z" stroke="#3b5bff" stroke-width="2.2" />
                 <path d="M8 16V10m4 6V7m4 9v-4" stroke="#3b5bff" stroke-width="2.2" stroke-linecap="round"/>
@@ -565,8 +562,6 @@
         </div>
       </div>
     </section>
-
-
 
     <!-- PRICING -->
     <section id="pricing" class="card" style="scroll-margin-top:90px;">
@@ -668,6 +663,14 @@
   </main>
 
   <script>
+    // ✅ Safety: force navbar links to correct pages (prevents accidental dashboard redirect)
+    (function fixNavLinks(){
+      const login = document.getElementById("navLogin");
+      const reg = document.getElementById("navRegister");
+      if (login) login.setAttribute("href", "./login.html");
+      if (reg) reg.setAttribute("href", "./register.html");
+    })();
+
     // ---- Demo upload behaviour ----
     const demoFile = document.getElementById("demoFile");
     const demoAnalyseBtn = document.getElementById("demoAnalyseBtn");
@@ -687,11 +690,9 @@
       const f = demoFile.files && demoFile.files[0];
       if (!f) return;
 
-      // We can't carry the file through navigation, but we can store intent.
       sessionStorage.setItem("spw_demo_selected", "1");
       sessionStorage.setItem("spw_demo_filename", f.name);
 
-      // Redirect to login; after login you can route to dashboard.html
       window.location.href = "./login.html?next=dashboard.html";
     });
 
@@ -730,8 +731,6 @@
 
     btnMonthly?.addEventListener("click", () => setBilling("monthly"));
     btnYearly?.addEventListener("click", () => setBilling("yearly"));
-
-    // Default
     setBilling("monthly");
   </script>
 </body>
