@@ -1,3 +1,4 @@
+// frontend/dashboard.js
 import { currentUser, logout, deleteAccount, clearMyData } from "./auth.js";
 
 console.log("Dashboard JS loaded");
@@ -251,11 +252,13 @@ function sumInvoicesForMonth(invoices, yyyyMM) {
     .reduce((sum, inv) => sum + (Number(inv.total) || 0), 0);
 }
 
+// SKU leak: needs inv.items[] with {description, unit_price}.
+// Fallback: invoice-total leak based on inv.changePct.
 function computeTopLeak(invoices) {
   const lastPrice = {};
-  let bestSku = null;
+  let bestSku = null; // {pct, supplier, item, from, to}
 
-  const ordered = [...(invoices || [])].reverse();
+  const ordered = [...(invoices || [])].reverse(); // oldest -> newest
   for (const inv of ordered) {
     const supplier = inv.supplier || "Unknown Supplier";
     const sKey = supplierKey(supplier);
@@ -264,6 +267,7 @@ function computeTopLeak(invoices) {
     for (const it of items) {
       const name = (it.description || "").trim();
       const unit = Number(it.unit_price);
+
       if (!name || !Number.isFinite(unit) || unit <= 0) continue;
 
       const itemKey = `${sKey}::${name.toLowerCase()}`;
@@ -282,17 +286,21 @@ function computeTopLeak(invoices) {
 
   if (bestSku) return { type: "sku", ...bestSku };
 
+  // fallback: biggest invoice-level changePct
   let bestInv = null;
   for (const inv of invoices || []) {
     const pct = Number(inv.changePct);
     if (Number.isFinite(pct) && pct > 0) {
-      if (!bestInv || pct > bestInv.pct) bestInv = { pct, supplier: inv.supplier || "Supplier" };
+      if (!bestInv || pct > bestInv.pct) {
+        bestInv = { pct, supplier: inv.supplier || "Supplier" };
+      }
     }
   }
   return bestInv ? { type: "invoice", ...bestInv } : null;
 }
 
 function updateKpis(invoices) {
+  // If KPI nodes aren’t present, do nothing safely
   if (!kpiMonthlySpend || !kpiMonthlyDelta || !kpiLeakValue || !kpiLeakTitle || !kpiVatTotal) return;
 
   const now = new Date();
@@ -328,6 +336,7 @@ function updateKpis(invoices) {
     kpiLeakTitle.textContent = `${leak.supplier} price hike`;
   }
 
+  // VAT estimate: VAT portion of VAT-inclusive totals @20% is total*(0.2/1.2)
   const vat = thisSpend * (0.2 / 1.2);
   kpiVatTotal.textContent = money(vat, currency);
 }
@@ -423,7 +432,14 @@ function closeModal() {
   if (modalOverlay) modalOverlay.style.display = "none";
 }
 
-// ---- LOGOUT (async) ----
+if (settingsBtn) settingsBtn.addEventListener("click", openModal);
+if (closeModalBtn) closeModalBtn.addEventListener("click", closeModal);
+if (modalOverlay) {
+  modalOverlay.addEventListener("click", (e) => {
+    if (e.target === modalOverlay) closeModal();
+  });
+}
+
 async function doLogout() {
   try {
     await logout();
@@ -433,9 +449,18 @@ async function doLogout() {
   window.location.href = "./index.html";
 }
 
-// ---- BOOTSTRAP ----
-(async function bootstrap() {
-  const user = await currentUser();
+// ---- main boot (IMPORTANT: Supabase currentUser() is async) ----
+let user = null;
+let selectedFiles = [];
+
+function updateSelectionUI() {
+  const count = selectedFiles.length;
+  if (countText) countText.textContent = `${count} / ${MAX_FILES} selected`;
+  if (analyseAllBtn) analyseAllBtn.disabled = count === 0;
+}
+
+(async function boot() {
+  user = await currentUser();
 
   if (!user) {
     window.location.href = "./login.html";
@@ -446,12 +471,24 @@ async function doLogout() {
   if (settingsName) settingsName.textContent = user.name;
   if (settingsEmail) settingsEmail.textContent = user.email;
 
-  let selectedFiles = [];
+  // Attach logout listeners AFTER boot
+  logoutBtn?.addEventListener("click", doLogout);
+  logoutBtn2?.addEventListener("click", doLogout);
 
-  function updateSelectionUI() {
-    const count = selectedFiles.length;
-    if (countText) countText.textContent = `${count} / ${MAX_FILES} selected`;
-    if (analyseAllBtn) analyseAllBtn.disabled = count === 0;
+  if (clearDataBtn) {
+    clearDataBtn.addEventListener("click", () => {
+      if (!confirm("Clear all invoices + history for this account on this device?")) return;
+      clearMyData(user.userId);
+      window.location.reload();
+    });
+  }
+
+  if (deleteAccountBtn) {
+    deleteAccountBtn.addEventListener("click", async () => {
+      if (!confirm("Delete account? This removes your account and local data on this device.")) return;
+      await deleteAccount();
+      window.location.href = "./register.html";
+    });
   }
 
   if (filesInput) {
@@ -550,7 +587,7 @@ async function doLogout() {
           changeText: chText,
           changePct: pct,
           source: usedBackend ? "backend" : "demo",
-          items,
+          items, // store SKU items if backend provided them
         });
       }
 
@@ -586,33 +623,4 @@ async function doLogout() {
 
     console.log("Using API_BASE:", API_BASE);
   })();
-
-  // ---- settings modal wiring ----
-  if (settingsBtn) settingsBtn.addEventListener("click", openModal);
-  if (closeModalBtn) closeModalBtn.addEventListener("click", closeModal);
-  if (modalOverlay) {
-    modalOverlay.addEventListener("click", (e) => {
-      if (e.target === modalOverlay) closeModal();
-    });
-  }
-
-  // ✅ Logout buttons (only once)
-  logoutBtn?.addEventListener("click", doLogout);
-  logoutBtn2?.addEventListener("click", doLogout);
-
-  if (clearDataBtn) {
-    clearDataBtn.addEventListener("click", () => {
-      if (!confirm("Clear all invoices + history for this account on this device?")) return;
-      clearMyData(user.userId);
-      window.location.reload();
-    });
-  }
-
-  if (deleteAccountBtn) {
-    deleteAccountBtn.addEventListener("click", async () => {
-      if (!confirm("Delete account? This removes your account and local data on this device.")) return;
-      await deleteAccount();
-      window.location.href = "./register.html";
-    });
-  }
 })();
