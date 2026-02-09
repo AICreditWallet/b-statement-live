@@ -1,101 +1,76 @@
 // frontend/auth.js
-// MVP-only auth using LocalStorage. Not secure for production.
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-const USERS_KEY = "spw_users_v1";
-const SESSION_KEY = "spw_session_v1";
+// ✅ Put your Supabase values here (Supabase → Project Settings → API)
+const SUPABASE_URL = "https://vqhezyceqmkltjpzgfkb.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZxaGV6eWNlcW1rbHRqcHpnZmtiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2MTkwMDQsImV4cCI6MjA4NDE5NTAwNH0.HcF-4Uv3PTrcqY43-cTtqnbd_3YKiGONaeIhiKrd28c";
 
-function loadUsers() {
-  try {
-    return JSON.parse(localStorage.getItem(USERS_KEY)) || [];
-  } catch {
-    return [];
-  }
-}
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-function saveUsers(users) {
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-}
-
-function getSession() {
-  try {
-    return JSON.parse(localStorage.getItem(SESSION_KEY)) || null;
-  } catch {
-    return null;
-  }
-}
-
-function setSession(session) {
-  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-}
-
-function clearSession() {
-  localStorage.removeItem(SESSION_KEY);
-}
-
-async function sha256(text) {
-  // Best-effort hashing. Still not “secure” because it’s client-side.
-  if (window.crypto?.subtle) {
-    const enc = new TextEncoder().encode(text);
-    const buf = await crypto.subtle.digest("SHA-256", enc);
-    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
-  }
-  // Fallback if SubtleCrypto not available
-  return btoa(unescape(encodeURIComponent(text)));
-}
-
-function normalizeEmail(email) {
-  return (email || "").trim().toLowerCase();
-}
+// ---- Session helpers (uses Supabase session; localStorage is managed by Supabase SDK) ----
 
 export async function createAccount({ name, email, password }) {
   name = (name || "").trim();
-  email = normalizeEmail(email);
+  email = (email || "").trim().toLowerCase();
   password = (password || "").trim();
 
   if (!name) throw new Error("Name is required.");
   if (!email || !email.includes("@")) throw new Error("Valid email is required.");
   if (password.length < 6) throw new Error("Password must be at least 6 characters.");
 
-  const users = loadUsers();
-  if (users.some(u => u.email === email)) throw new Error("Account already exists for this email.");
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: { name }
+    }
+  });
 
-  const passwordHash = await sha256(password);
-  const user = { id: crypto.randomUUID?.() || String(Date.now()), name, email, passwordHash, createdAt: Date.now() };
-  users.push(user);
-  saveUsers(users);
+  if (error) throw new Error(error.message);
 
-  // Auto-login after signup
-  setSession({ userId: user.id, email: user.email, name: user.name, loggedInAt: Date.now() });
-  return { id: user.id, name: user.name, email: user.email };
+  // Note: if email confirmation is ON, session may be null until they confirm.
+  return {
+    id: data?.user?.id || null,
+    name,
+    email
+  };
 }
 
 export async function login({ email, password }) {
-  email = normalizeEmail(email);
+  email = (email || "").trim().toLowerCase();
   password = (password || "").trim();
 
   if (!email || !email.includes("@")) throw new Error("Enter a valid email.");
   if (!password) throw new Error("Enter your password.");
 
-  const users = loadUsers();
-  const user = users.find(u => u.email === email);
-  if (!user) throw new Error("No account found for this email.");
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) throw new Error(error.message);
 
-  const passwordHash = await sha256(password);
-  if (passwordHash !== user.passwordHash) throw new Error("Incorrect password.");
-
-  setSession({ userId: user.id, email: user.email, name: user.name, loggedInAt: Date.now() });
-  return { id: user.id, name: user.name, email: user.email };
+  const user = data?.user;
+  return {
+    id: user?.id || null,
+    name: user?.user_metadata?.name || "",
+    email: user?.email || email
+  };
 }
 
-export function logout() {
-  clearSession();
+export async function logout() {
+  await supabase.auth.signOut();
 }
 
-export function currentUser() {
-  const s = getSession();
-  return s ? { name: s.name, email: s.email, userId: s.userId } : null;
+export async function currentUser() {
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data?.user) return null;
+
+  const u = data.user;
+  return {
+    name: u.user_metadata?.name || "",
+    email: u.email || "",
+    userId: u.id
+  };
 }
-// Add these to auth.js
+
+// ---- Your existing “local data” helpers can stay (for invoices/history stored per user on device) ----
 
 export function clearMyData(userId) {
   if (!userId) return;
@@ -104,23 +79,18 @@ export function clearMyData(userId) {
 }
 
 export async function deleteAccount() {
-  // Removes current account from this device + clears session + data
-  const session = (() => {
-    try { return JSON.parse(localStorage.getItem("spw_session_v1")) || null; } catch { return null; }
-  })();
-  if (!session?.userId) throw new Error("No logged-in user.");
+  // IMPORTANT:
+  // You cannot safely delete Supabase Auth users from the browser using anon key.
+  // That requires a backend (service role key) or Supabase Edge Function.
+  //
+  // For now: clear local data + sign out.
+  const me = await currentUser();
+  if (!me?.userId) throw new Error("No logged-in user.");
 
-  const userId = session.userId;
-  const email = (session.email || "").toLowerCase();
+  clearMyData(me.userId);
+  await logout();
 
-  // Remove user from users list
-  const USERS_KEY = "spw_users_v1";
-  let users = [];
-  try { users = JSON.parse(localStorage.getItem(USERS_KEY)) || []; } catch {}
-  users = users.filter(u => (u.email || "").toLowerCase() !== email);
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-
-  // Clear local data and session
-  clearMyData(userId);
-  localStorage.removeItem("spw_session_v1");
+  // If you want true account deletion later:
+  // we’ll add a backend endpoint /delete-user using SERVICE_ROLE_KEY (server-only).
+  return true;
 }
