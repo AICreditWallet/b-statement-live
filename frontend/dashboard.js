@@ -251,13 +251,11 @@ function sumInvoicesForMonth(invoices, yyyyMM) {
     .reduce((sum, inv) => sum + (Number(inv.total) || 0), 0);
 }
 
-// SKU leak: needs inv.items[] with {description, unit_price}.
-// Fallback: invoice-total leak based on inv.changePct.
 function computeTopLeak(invoices) {
   const lastPrice = {};
-  let bestSku = null; // {pct, supplier, item, from, to}
+  let bestSku = null;
 
-  const ordered = [...(invoices || [])].reverse(); // oldest -> newest
+  const ordered = [...(invoices || [])].reverse();
   for (const inv of ordered) {
     const supplier = inv.supplier || "Unknown Supplier";
     const sKey = supplierKey(supplier);
@@ -266,7 +264,6 @@ function computeTopLeak(invoices) {
     for (const it of items) {
       const name = (it.description || "").trim();
       const unit = Number(it.unit_price);
-
       if (!name || !Number.isFinite(unit) || unit <= 0) continue;
 
       const itemKey = `${sKey}::${name.toLowerCase()}`;
@@ -285,21 +282,17 @@ function computeTopLeak(invoices) {
 
   if (bestSku) return { type: "sku", ...bestSku };
 
-  // fallback: biggest invoice-level changePct
   let bestInv = null;
   for (const inv of invoices || []) {
     const pct = Number(inv.changePct);
     if (Number.isFinite(pct) && pct > 0) {
-      if (!bestInv || pct > bestInv.pct) {
-        bestInv = { pct, supplier: inv.supplier || "Supplier" };
-      }
+      if (!bestInv || pct > bestInv.pct) bestInv = { pct, supplier: inv.supplier || "Supplier" };
     }
   }
   return bestInv ? { type: "invoice", ...bestInv } : null;
 }
 
 function updateKpis(invoices) {
-  // If KPI nodes aren’t present, do nothing safely
   if (!kpiMonthlySpend || !kpiMonthlyDelta || !kpiLeakValue || !kpiLeakTitle || !kpiVatTotal) return;
 
   const now = new Date();
@@ -335,7 +328,6 @@ function updateKpis(invoices) {
     kpiLeakTitle.textContent = `${leak.supplier} price hike`;
   }
 
-  // VAT estimate: VAT portion of VAT-inclusive totals @20% is total*(0.2/1.2)
   const vat = thisSpend * (0.2 / 1.2);
   kpiVatTotal.textContent = money(vat, currency);
 }
@@ -423,157 +415,6 @@ function updateCharts(invoices) {
   });
 }
 
-// ---- main ----
-const user = currentUser();
-if (!user) {
-  window.location.href = "./login.html";
-}
-
-if (userLine) userLine.textContent = `${user.name} • ${user.email}`;
-if (settingsName) settingsName.textContent = user.name;
-if (settingsEmail) settingsEmail.textContent = user.email;
-
-let selectedFiles = [];
-
-function updateSelectionUI() {
-  const count = selectedFiles.length;
-  if (countText) countText.textContent = `${count} / ${MAX_FILES} selected`;
-  if (analyseAllBtn) analyseAllBtn.disabled = count === 0;
-}
-
-if (filesInput) {
-  filesInput.addEventListener("change", () => {
-    const files = Array.from(filesInput.files || []);
-
-    if (files.length > MAX_FILES) {
-      setStatus(`Too many files. Max is ${MAX_FILES}.`);
-      filesInput.value = "";
-      selectedFiles = [];
-      updateSelectionUI();
-      return;
-    }
-
-    selectedFiles = files;
-    setStatus(files.length ? `Selected ${files.length} file(s).` : "");
-    updateSelectionUI();
-  });
-}
-
-if (analyseAllBtn) {
-  analyseAllBtn.addEventListener("click", async () => {
-    if (!selectedFiles.length) return;
-
-    setStatus("Analysing uploads…");
-
-    const invKey = invoicesKey(user.userId);
-    const histKey = historyKey(user.userId);
-
-    const invoices = loadJSON(invKey, []);
-    const history = loadJSON(histKey, { suppliers: {} });
-    history.suppliers ||= {};
-
-    for (let i = 0; i < selectedFiles.length; i++) {
-      const f = selectedFiles[i];
-      setStatus(`Analysing ${i + 1}/${selectedFiles.length}: ${f.name}`);
-
-      let supplierName = inferSupplierFromFilename(f.name);
-      let sKey = supplierKey(supplierName);
-
-      let usedBackend = false;
-      let total = null;
-      let currency = "£";
-      let items = [];
-
-      try {
-        const formData = new FormData();
-        formData.append("file", f);
-
-        const res = await postToBackend(formData);
-
-        if (res.ok) {
-          const data = await res.json();
-
-          const backendVendor = pickVendorFromBackendJSON(data);
-          if (backendVendor) {
-            supplierName = backendVendor;
-            sKey = supplierKey(supplierName);
-          }
-
-          currency = pickCurrencyFromBackendJSON(data) || "£";
-          total = pickTotalFromBackendJSON(data);
-          items = Array.isArray(data.items) ? data.items : [];
-
-          usedBackend = true;
-          if (total == null) total = demoTotalFromFile(f);
-        } else {
-          total = demoTotalFromFile(f);
-        }
-      } catch (err) {
-        console.warn("Backend analyse failed, using demo total:", err);
-        total = demoTotalFromFile(f);
-      }
-
-      const prev = history.suppliers[sKey];
-      const prevTotal = prev?.lastInvoiceTotal ?? null;
-
-      const chText = changeText(total, prevTotal, currency);
-      const pct = changePct(total, prevTotal);
-
-      history.suppliers[sKey] = {
-        displayName: supplierName,
-        totalSpend: (prev?.totalSpend || 0) + total,
-        lastInvoiceTotal: total,
-        lastChangeText: chText,
-        currency,
-      };
-
-      invoices.unshift({
-        id: crypto.randomUUID?.() || String(Date.now() + Math.random()),
-        date: isoDate(),
-        supplier: supplierName,
-        filename: f.name,
-        total,
-        currency,
-        changeText: chText,
-        changePct: pct,
-        source: usedBackend ? "backend" : "demo",
-        items, // store SKU items if backend provided them
-      });
-    }
-
-    saveJSON(invKey, invoices);
-    saveJSON(histKey, history);
-
-    if (filesInput) filesInput.value = "";
-    selectedFiles = [];
-    updateSelectionUI();
-
-    renderInvoices(invoices);
-    renderLeaderboard(history);
-    updateKpis(invoices);
-    updateCharts(invoices);
-
-    setStatus("Done.");
-  });
-}
-
-// ---- init on load ----
-(function init() {
-  const invKey = invoicesKey(user.userId);
-  const histKey = historyKey(user.userId);
-
-  const invoices = loadJSON(invKey, []);
-  const history = loadJSON(histKey, { suppliers: {} });
-
-  renderInvoices(invoices);
-  renderLeaderboard(history);
-  updateKpis(invoices);
-  updateCharts(invoices);
-  updateSelectionUI();
-
-  console.log("Using API_BASE:", API_BASE);
-})();
-
 // ---- settings modal wiring ----
 function openModal() {
   if (modalOverlay) modalOverlay.style.display = "flex";
@@ -582,14 +423,7 @@ function closeModal() {
   if (modalOverlay) modalOverlay.style.display = "none";
 }
 
-if (settingsBtn) settingsBtn.addEventListener("click", openModal);
-if (closeModalBtn) closeModalBtn.addEventListener("click", closeModal);
-if (modalOverlay) {
-  modalOverlay.addEventListener("click", (e) => {
-    if (e.target === modalOverlay) closeModal();
-  });
-}
-
+// ---- LOGOUT (async) ----
 async function doLogout() {
   try {
     await logout();
@@ -599,25 +433,186 @@ async function doLogout() {
   window.location.href = "./index.html";
 }
 
-logoutBtn?.addEventListener("click", doLogout);
-logoutBtn2?.addEventListener("click", doLogout);
+// ---- BOOTSTRAP ----
+(async function bootstrap() {
+  const user = await currentUser();
 
+  if (!user) {
+    window.location.href = "./login.html";
+    return;
+  }
 
-logoutBtn?.addEventListener("click", doLogout);
-logoutBtn2?.addEventListener("click", doLogout);
+  if (userLine) userLine.textContent = `${user.name} • ${user.email}`;
+  if (settingsName) settingsName.textContent = user.name;
+  if (settingsEmail) settingsEmail.textContent = user.email;
 
-if (clearDataBtn) {
-  clearDataBtn.addEventListener("click", () => {
-    if (!confirm("Clear all invoices + history for this account on this device?")) return;
-    clearMyData(user.userId);
-    window.location.reload();
-  });
-}
+  let selectedFiles = [];
 
-if (deleteAccountBtn) {
-  deleteAccountBtn.addEventListener("click", async () => {
-    if (!confirm("Delete account? This removes your account and local data on this device.")) return;
-    await deleteAccount();
-    window.location.href = "./register.html";
-  });
-}
+  function updateSelectionUI() {
+    const count = selectedFiles.length;
+    if (countText) countText.textContent = `${count} / ${MAX_FILES} selected`;
+    if (analyseAllBtn) analyseAllBtn.disabled = count === 0;
+  }
+
+  if (filesInput) {
+    filesInput.addEventListener("change", () => {
+      const files = Array.from(filesInput.files || []);
+
+      if (files.length > MAX_FILES) {
+        setStatus(`Too many files. Max is ${MAX_FILES}.`);
+        filesInput.value = "";
+        selectedFiles = [];
+        updateSelectionUI();
+        return;
+      }
+
+      selectedFiles = files;
+      setStatus(files.length ? `Selected ${files.length} file(s).` : "");
+      updateSelectionUI();
+    });
+  }
+
+  if (analyseAllBtn) {
+    analyseAllBtn.addEventListener("click", async () => {
+      if (!selectedFiles.length) return;
+
+      setStatus("Analysing uploads…");
+
+      const invKey = invoicesKey(user.userId);
+      const histKey = historyKey(user.userId);
+
+      const invoices = loadJSON(invKey, []);
+      const history = loadJSON(histKey, { suppliers: {} });
+      history.suppliers ||= {};
+
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const f = selectedFiles[i];
+        setStatus(`Analysing ${i + 1}/${selectedFiles.length}: ${f.name}`);
+
+        let supplierName = inferSupplierFromFilename(f.name);
+        let sKey = supplierKey(supplierName);
+
+        let usedBackend = false;
+        let total = null;
+        let currency = "£";
+        let items = [];
+
+        try {
+          const formData = new FormData();
+          formData.append("file", f);
+
+          const res = await postToBackend(formData);
+
+          if (res.ok) {
+            const data = await res.json();
+
+            const backendVendor = pickVendorFromBackendJSON(data);
+            if (backendVendor) {
+              supplierName = backendVendor;
+              sKey = supplierKey(supplierName);
+            }
+
+            currency = pickCurrencyFromBackendJSON(data) || "£";
+            total = pickTotalFromBackendJSON(data);
+            items = Array.isArray(data.items) ? data.items : [];
+
+            usedBackend = true;
+            if (total == null) total = demoTotalFromFile(f);
+          } else {
+            total = demoTotalFromFile(f);
+          }
+        } catch (err) {
+          console.warn("Backend analyse failed, using demo total:", err);
+          total = demoTotalFromFile(f);
+        }
+
+        const prev = history.suppliers[sKey];
+        const prevTotal = prev?.lastInvoiceTotal ?? null;
+
+        const chText = changeText(total, prevTotal, currency);
+        const pct = changePct(total, prevTotal);
+
+        history.suppliers[sKey] = {
+          displayName: supplierName,
+          totalSpend: (prev?.totalSpend || 0) + total,
+          lastInvoiceTotal: total,
+          lastChangeText: chText,
+          currency,
+        };
+
+        invoices.unshift({
+          id: crypto.randomUUID?.() || String(Date.now() + Math.random()),
+          date: isoDate(),
+          supplier: supplierName,
+          filename: f.name,
+          total,
+          currency,
+          changeText: chText,
+          changePct: pct,
+          source: usedBackend ? "backend" : "demo",
+          items,
+        });
+      }
+
+      saveJSON(invKey, invoices);
+      saveJSON(histKey, history);
+
+      if (filesInput) filesInput.value = "";
+      selectedFiles = [];
+      updateSelectionUI();
+
+      renderInvoices(invoices);
+      renderLeaderboard(history);
+      updateKpis(invoices);
+      updateCharts(invoices);
+
+      setStatus("Done.");
+    });
+  }
+
+  // ---- init on load ----
+  (function init() {
+    const invKey = invoicesKey(user.userId);
+    const histKey = historyKey(user.userId);
+
+    const invoices = loadJSON(invKey, []);
+    const history = loadJSON(histKey, { suppliers: {} });
+
+    renderInvoices(invoices);
+    renderLeaderboard(history);
+    updateKpis(invoices);
+    updateCharts(invoices);
+    updateSelectionUI();
+
+    console.log("Using API_BASE:", API_BASE);
+  })();
+
+  // ---- settings modal wiring ----
+  if (settingsBtn) settingsBtn.addEventListener("click", openModal);
+  if (closeModalBtn) closeModalBtn.addEventListener("click", closeModal);
+  if (modalOverlay) {
+    modalOverlay.addEventListener("click", (e) => {
+      if (e.target === modalOverlay) closeModal();
+    });
+  }
+
+  // ✅ Logout buttons (only once)
+  logoutBtn?.addEventListener("click", doLogout);
+  logoutBtn2?.addEventListener("click", doLogout);
+
+  if (clearDataBtn) {
+    clearDataBtn.addEventListener("click", () => {
+      if (!confirm("Clear all invoices + history for this account on this device?")) return;
+      clearMyData(user.userId);
+      window.location.reload();
+    });
+  }
+
+  if (deleteAccountBtn) {
+    deleteAccountBtn.addEventListener("click", async () => {
+      if (!confirm("Delete account? This removes your account and local data on this device.")) return;
+      await deleteAccount();
+      window.location.href = "./register.html";
+    });
+  }
+})();
