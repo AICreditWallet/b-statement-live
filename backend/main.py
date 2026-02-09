@@ -1,4 +1,7 @@
 import os
+
+from dotenv import load_dotenv
+load_dotenv()  # loads backend/.env into environment
 import re
 from io import BytesIO
 from typing import Any, Dict, List, Optional, Tuple

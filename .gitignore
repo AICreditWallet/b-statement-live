@@ -12,3 +12,5 @@ venv/
 
 # PDF uploads (if you add later)
 uploads/
+.env
+backend/.env
