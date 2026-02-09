@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Dashboard • Supplier Price Watch</title>
+  <title>Dashboard • B statement</title>
 
   <link rel="stylesheet" href="./styles.css">
 
@@ -26,10 +26,11 @@
       --btn:#0b1220;
     }
 
-    body{ background:var(--bg); color:var(--text); }
+    body{ background:var(--bg); color:var(--text); margin:0; }
 
     .wrap { max-width: 1100px; margin: 0 auto; padding: 22px 18px 70px; }
 
+    /* Make sure header always receives clicks */
     .topBar {
       display:flex;
       justify-content:space-between;
@@ -40,7 +41,8 @@
       background:#fff;
       position: sticky;
       top: 0;
-      z-index: 10;
+      z-index: 999;
+      pointer-events: auto;
     }
     .brandLeft{ display:flex; align-items:center; gap:12px; }
     .logo{ width:34px; height:34px; border-radius:10px; }
@@ -88,6 +90,8 @@
       color:#fff;
       box-shadow:var(--shadow2);
       border: 1px solid rgba(255,255,255,.20);
+      position: relative;
+      z-index: 1; /* keep below header */
     }
     .hero h1{ margin:0 0 8px; font-size: clamp(22px, 3vw, 32px); letter-spacing:-0.02em; }
     .hero p{ margin:0; opacity:.95; font-size:14px; }
@@ -184,7 +188,7 @@
       align-items:center;
       justify-content:center;
       padding: 18px;
-      z-index: 50;
+      z-index: 2000;
     }
     .modal{
       width:min(560px, 100%);
@@ -218,26 +222,26 @@
     </div>
 
     <div class="actions">
-      <button id="settingsBtn" class="btn secondary">Settings</button>
-      <button id="logoutBtn" class="btn">Logout</button>
+      <button id="settingsBtn" class="btn secondary" type="button">Settings</button>
+      <button id="logoutBtn" class="btn" type="button">Logout</button>
     </div>
   </header>
 
   <main class="wrap">
     <section class="hero">
       <h1>Upload invoices & receipts</h1>
-      <p>Select up to 10 files (PDF / images). This MVP stores everything on this device.</p>
+      <p>Select up to 10 files (PDF / images). Upload analysis runs via the backend when available.</p>
 
       <div class="uploadRow">
         <input id="filesInput" type="file" accept="application/pdf,image/*" multiple />
-        <button id="analyseAllBtn" class="btn" disabled>Analyse uploads</button>
+        <button id="analyseAllBtn" class="btn" type="button" disabled>Analyse uploads</button>
         <span class="small" id="countText">0 / 10 selected</span>
       </div>
 
       <div id="status"></div>
     </section>
 
-    <!-- Command Center (Top Row) -->
+    <!-- KPI row -->
     <section class="kpiRow">
       <div class="kpiCard">
         <div class="kpiTop">
@@ -267,7 +271,7 @@
       </div>
     </section>
 
-    <!-- Visual Trend Analytics (IDs MUST match dashboard.js) -->
+    <!-- Charts -->
     <section class="grid2" style="margin-top:16px;">
       <div class="card">
         <div style="font-weight:800; font-size:16px;">Spend velocity</div>
@@ -290,7 +294,7 @@
     <section class="grid2">
       <div class="card">
         <div style="font-weight:800; font-size:16px;">Uploads (this account)</div>
-        <div class="muted">Newest first. Demo totals until OCR backend returns real totals.</div>
+        <div class="muted">Newest first. If backend OCR fails, demo totals may be used.</div>
 
         <table id="invoicesTable">
           <thead>
@@ -306,7 +310,7 @@
         </table>
 
         <div class="muted" style="margin-top:10px;">
-          Tip: if backend is still localhost, live site will use demo mode.
+          Note: invoices/history are currently stored per-browser until moved into Supabase tables.
         </div>
       </div>
 
@@ -339,7 +343,7 @@
     <div class="modal">
       <div class="modalHeader">
         <div class="modalTitle">Settings</div>
-        <button id="closeModalBtn" class="btn secondary">Close</button>
+        <button id="closeModalBtn" class="btn secondary" type="button">Close</button>
       </div>
 
       <div class="row">
@@ -354,9 +358,9 @@
       <div class="row">
         <div>
           <div style="font-weight:800;">Data</div>
-          <div class="muted">Clear invoices + history for this account on this device.</div>
+          <div class="muted">Clear invoices + history for this account on this browser.</div>
         </div>
-        <button id="clearDataBtn" class="btn secondary">Clear my data</button>
+        <button id="clearDataBtn" class="btn secondary" type="button">Clear my data</button>
       </div>
 
       <div class="hr"></div>
@@ -364,9 +368,9 @@
       <div class="row">
         <div>
           <div style="font-weight:800; color:#9b0000;">Delete account</div>
-          <div class="muted">Removes this account from this device. Irreversible.</div>
+          <div class="muted">Ends your session and clears local data (full deletion needs backend).</div>
         </div>
-        <button id="deleteAccountBtn" class="btn danger">Delete account</button>
+        <button id="deleteAccountBtn" class="btn danger" type="button">Delete account</button>
       </div>
 
       <div class="hr"></div>
@@ -374,9 +378,9 @@
       <div class="row">
         <div>
           <div style="font-weight:800;">Logout</div>
-          <div class="muted">End your session on this device.</div>
+          <div class="muted">End your session on this browser.</div>
         </div>
-        <button id="logoutBtn2" class="btn">Logout</button>
+        <button id="logoutBtn2" class="btn" type="button">Logout</button>
       </div>
     </div>
   </div>
