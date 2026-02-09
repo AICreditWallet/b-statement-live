@@ -596,8 +596,12 @@ async function doLogout() {
   } catch (e) {
     console.warn(e);
   }
-  window.location.href = "./index.html"; // or "./login.html" if you prefer
+  window.location.href = "./index.html";
 }
+
+logoutBtn?.addEventListener("click", doLogout);
+logoutBtn2?.addEventListener("click", doLogout);
+
 
 logoutBtn?.addEventListener("click", doLogout);
 logoutBtn2?.addEventListener("click", doLogout);
