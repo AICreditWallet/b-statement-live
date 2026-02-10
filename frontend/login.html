@@ -52,13 +52,16 @@
       background: #0b1220;
       color: #fff;
     }
+    .btn:disabled { opacity:.6; cursor:not-allowed; }
 
     .muted { color: rgba(0,0,0,.6); font-size: 13px; }
     .links { margin-top: 12px; display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; }
     a { color: rgba(11,18,32,.9); text-decoration: none; }
     a:hover { text-decoration: underline; }
 
-    #msg { margin-top: 10px; font-size: 13px; color: rgba(155,0,0,.9); min-height: 18px; }
+    #msg { margin-top: 10px; font-size: 13px; min-height: 18px; }
+    .error { color: rgba(155,0,0,.9); }
+    .ok { color: rgba(0,110,60,.95); }
   </style>
 </head>
 
@@ -85,8 +88,8 @@
           <input id="password" type="password" autocomplete="current-password" required />
         </div>
 
-        <button class="btn" type="submit">Login</button>
-        <div id="msg"></div>
+        <button id="loginBtn" class="btn" type="submit">Login</button>
+        <div id="msg" class="error"></div>
 
         <div class="links muted">
           <span>New here? <a href="./register.html">Create an account</a></span>
@@ -99,24 +102,60 @@
   <script type="module">
     import { login, currentUser } from "./auth.js";
 
-    // Already logged in -> go to dashboard
-    if (currentUser()) window.location.href = "./dashboard.html";
-
     const form = document.getElementById("loginForm");
     const msg = document.getElementById("msg");
+    const loginBtn = document.getElementById("loginBtn");
+
+    const params = new URLSearchParams(window.location.search);
+    const next = params.get("next") || "dashboard.html";
+
+    function setMsg(text, kind = "error") {
+      msg.textContent = text || "";
+      msg.className = kind === "ok" ? "ok" : "error";
+    }
+
+    // ✅ FIX: currentUser() is async — must await it
+    const me = await currentUser();
+    if (me) {
+      window.location.href = `./${next}`;
+    }
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      msg.textContent = "";
+      setMsg("");
 
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
 
       try {
+        loginBtn.disabled = true;
+        loginBtn.textContent = "Logging in...";
+
         await login({ email, password });
-        window.location.href = "./dashboard.html";
+
+        // ✅ verify session exists
+        const now = await currentUser();
+        if (now) {
+          setMsg("Logged in. Redirecting...", "ok");
+          window.location.href = `./${next}`;
+          return;
+        }
+
+        // Very rare, but keep user informed
+        setMsg("Logged in, but session not found. Please refresh and try again.", "error");
       } catch (err) {
-        msg.textContent = err?.message || "Login failed.";
+        const m = (err?.message || "Login failed.").toLowerCase();
+
+        if (m.includes("invalid login credentials")) {
+          setMsg("Invalid email or password. If you just signed up, confirm your email first.", "error");
+        } else if (m.includes("email not confirmed")) {
+          setMsg("Please confirm your email address, then try again.", "error");
+        } else {
+          setMsg(err?.message || "Login failed.", "error");
+        }
+      } finally {
+        loginBtn.disabled = false;
+        loginBtn.textContent = "Login";
       }
     });
   </script>
