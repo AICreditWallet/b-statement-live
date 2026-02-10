@@ -1,28 +1,64 @@
 // frontend/auth.js
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-// Supabase → Project Settings → API
+// ✅ Supabase config
 const SUPABASE_URL = "https://vqhezyceqmkltjpzgfkb.supabase.co";
-const SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZxaGV6eWNlcW1rbHRqcHpnZmtiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2MTkwMDQsImV4cCI6MjA4NDE5NTAwNH0.HcF-4Uv3PTrcqY43-cTtqnbd_3YKiGONaeIhiKrd28c";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZxaGV6eWNlcW1rbHRqcHpnZmtiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2MTkwMDQsImV4cCI6MjA4NDE5NTAwNH0.HcF-4Uv3PTrcqY43-cTtqnbd_3YKiGONaeIhiKrd28c";
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: {
-    persistSession: true,     // keep session across refreshes
-    autoRefreshToken: true,   // refresh tokens automatically
-    detectSessionInUrl: true, // handles magic links / oauth redirects
-  },
-});
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// ------------------ Auth actions ------------------
+// ---------------------------
+// ✅ Synchronous currentUser()
+// ---------------------------
+// Supabase stores session in localStorage under:
+// sb-<project_ref>-auth-token
+const PROJECT_REF = "vqhezyceqmkltjpzgfkb";
+const STORAGE_KEY = `sb-${PROJECT_REF}-auth-token`;
 
-function normalizeEmail(email) {
-  return (email || "").trim().toLowerCase();
+function readSupabaseUserFromStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw);
+
+    // Supabase v2 format typically includes { user: {...}, access_token, ... }
+    const u = parsed?.user;
+    if (!u?.id) return null;
+
+    return {
+      name: u.user_metadata?.name || "",
+      email: u.email || "",
+      userId: u.id,
+    };
+  } catch {
+    return null;
+  }
 }
 
+// ✅ This stays synchronous so your existing dashboard/login/register scripts work
+export function currentUser() {
+  return readSupabaseUserFromStorage();
+}
+
+// Optional async version (for future use)
+export async function currentUserAsync() {
+  const { data } = await supabase.auth.getUser();
+  const u = data?.user;
+  if (!u) return null;
+  return {
+    name: u.user_metadata?.name || "",
+    email: u.email || "",
+    userId: u.id,
+  };
+}
+
+// ---------------------------
+// Auth actions
+// ---------------------------
 export async function createAccount({ name, email, password }) {
   name = (name || "").trim();
-  email = normalizeEmail(email);
+  email = (email || "").trim().toLowerCase();
   password = (password || "").trim();
 
   if (!name) throw new Error("Name is required.");
@@ -32,25 +68,20 @@ export async function createAccount({ name, email, password }) {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: {
-      data: { name }, // stored in user_metadata
-    },
+    options: { data: { name } },
   });
 
   if (error) throw new Error(error.message);
 
-  // IMPORTANT:
-  // If email confirmations are ON, data.session may be null until they confirm the email.
   return {
     id: data?.user?.id || null,
     name,
     email,
-    session: data?.session || null,
   };
 }
 
 export async function login({ email, password }) {
-  email = normalizeEmail(email);
+  email = (email || "").trim().toLowerCase();
   password = (password || "").trim();
 
   if (!email || !email.includes("@")) throw new Error("Enter a valid email.");
@@ -68,59 +99,23 @@ export async function login({ email, password }) {
 }
 
 export async function logout() {
-  // Ensure client-side session is cleared
-  const { error } = await supabase.auth.signOut();
-  if (error) throw new Error(error.message);
-
-  // Extra safety: clear any old local MVP session keys if they ever existed
-  try { localStorage.removeItem("spw_session_v1"); } catch {}
+  await supabase.auth.signOut();
 }
 
-// ------------------ Session helpers ------------------
-
-export async function currentUser() {
-  const { data, error } = await supabase.auth.getUser();
-  if (error || !data?.user) return null;
-
-  const u = data.user;
-  return {
-    name: u.user_metadata?.name || "",
-    email: u.email || "",
-    userId: u.id,
-  };
-}
-
-// Page guard: use on dashboard
-export async function requireAuth(redirectTo = "./login.html") {
-  const u = await currentUser();
-  if (!u) {
-    window.location.href = redirectTo;
-    return null;
-  }
-  return u;
-}
-
-// Page guard: use on login/register (if already logged in)
-export async function redirectIfLoggedIn(redirectTo = "./dashboard.html") {
-  const u = await currentUser();
-  if (u) window.location.href = redirectTo;
-}
-
-// ------------------ Local data helpers (OK to stay local) ------------------
-// NOTE: These are NOT accounts. This is just per-device cached invoice history.
+// ---------------------------
+// Local-only data helpers (still fine for now)
+// ---------------------------
 export function clearMyData(userId) {
   if (!userId) return;
   localStorage.removeItem(`spw_history_${userId}`);
   localStorage.removeItem(`spw_invoices_${userId}`);
 }
 
-// IMPORTANT:
-// You cannot delete Supabase Auth users securely from the browser with anon key.
-// That requires backend/service role or an Edge Function.
-// For now: clear local data + logout
-export async function deleteAccountLocalOnly() {
-  const me = await currentUser();
+export async function deleteAccount() {
+  // Cannot delete Supabase Auth users from browser with anon key
+  const me = currentUser();
   if (!me?.userId) throw new Error("No logged-in user.");
+
   clearMyData(me.userId);
   await logout();
   return true;
