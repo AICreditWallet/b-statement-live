@@ -398,6 +398,174 @@
     }
     .footer a{ color: rgba(17,24,39,.55); text-decoration:none; margin: 0 8px; }
     .footer a:hover{ text-decoration:underline; }
+    /* =========================
+   Mobile responsiveness patch
+   (paste at END of index.html <style>)
+   ========================= */
+
+* { box-sizing: border-box; }
+
+img { max-width: 100%; height: auto; }
+
+.wrap { width: 100%; }
+
+.heroGrid {
+  align-items: stretch;
+}
+
+/* Fix pills + long text overflow on small screens */
+.hero h1 {
+  word-break: break-word;
+}
+
+.pill {
+  max-width: 100%;
+  justify-content: center;
+}
+
+/* Make file input not overflow */
+.uploadRow {
+  width: 100%;
+}
+
+#demoFile {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Preview images/cards never overflow */
+.previewGrid,
+.pricingGrid,
+.steps,
+.nav,
+.actions {
+  min-width: 0;
+}
+
+/* ===== Phone layout ===== */
+@media (max-width: 720px) {
+  .wrap { padding: 16px 14px 50px; }
+
+  .topBar {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .brandLeft {
+    min-width: 0;
+    gap: 10px;
+  }
+
+  .title {
+    font-size: 14px;
+    font-weight: 800;
+  }
+
+  .subtitle {
+    font-size: 11px;
+    line-height: 1.25;
+  }
+
+  /* Hide desktop nav; keep buttons */
+  .nav { display: none; }
+
+  .actions {
+    min-width: 0;
+    gap: 8px;
+  }
+
+  .btn {
+    padding: 9px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .hero {
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  .hero::after { display: none; }
+
+  .heroGrid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .hero h1 {
+    font-size: 24px;
+    line-height: 1.1;
+    margin-bottom: 8px;
+  }
+
+  .hero p {
+    font-size: 13px;
+    max-width: none;
+  }
+
+  .heroBadges {
+    gap: 8px;
+  }
+
+  .pill {
+    font-size: 12px;
+    padding: 7px 10px;
+  }
+
+  .uploadCard {
+    padding: 12px;
+    border-radius: 14px;
+  }
+
+  .uploadRow {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 10px;
+  }
+
+  input[type="file"] {
+    width: 100%;
+  }
+
+  #demoAnalyseBtn {
+    width: 100%;
+  }
+
+  /* Preview section: one column */
+  .previewGrid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  /* How it works: one column */
+  .steps {
+    grid-template-columns: 1fr;
+  }
+
+  /* Pricing cards stack */
+  .pricingGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .plan {
+    min-height: auto;
+  }
+
+  /* Reduce overly bold pricing numbers on mobile (optional but helps) */
+  .price {
+    font-size: 36px;
+    font-weight: 900;
+  }
+}
+
+/* ===== Very small phones ===== */
+@media (max-width: 380px) {
+  .btn { padding: 8px 9px; font-size: 11px; }
+  .hero h1 { font-size: 22px; }
+}
+
   </style>
 </head>
 
