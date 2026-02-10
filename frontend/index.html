@@ -419,9 +419,9 @@
 
     <!-- ✅ FIXED: these must go to login/register (NOT dashboard) -->
     <div class="actions">
-      <a id="navLogin" class="btn secondary" href="./login.html">Login</a>
-      <a id="navRegister" class="btn" href="./register.html">Create account</a>
-    </div>
+  <a id="navLogin" class="btn secondary" href="./login.html">Login</a>
+  <a id="navRegister" class="btn" href="./register.html">Create account</a>
+</div>
   </header>
 
   <main class="wrap">
@@ -729,5 +729,17 @@
     btnYearly?.addEventListener("click", () => setBilling("yearly"));
     setBilling("monthly");
   </script>
+  <script>
+  document.getElementById("navLogin")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    window.location.href = "./login.html";
+  });
+
+  document.getElementById("navRegister")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    window.location.href = "./register.html";
+  });
+</script>
+
 </body>
 </html>
