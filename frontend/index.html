@@ -565,6 +565,134 @@ img { max-width: 100%; height: auto; }
   .btn { padding: 8px 9px; font-size: 11px; }
   .hero h1 { font-size: 22px; }
 }
+/* =========================
+   Mobile responsiveness fix
+   ========================= */
+
+html, body {
+  width: 100%;
+  overflow-x: hidden; /* prevent sideways scroll on mobile */
+}
+
+img, svg, canvas {
+  max-width: 100%;
+  height: auto;
+}
+
+.wrap {
+  width: 100%;
+}
+
+/* Make hero always fit */
+.hero {
+  border-radius: 16px;
+}
+
+/* Ensure grid collapses nicely */
+.heroGrid {
+  min-width: 0;
+}
+
+@media (max-width: 820px) {
+  .topBar {
+    padding: 10px 12px;
+  }
+
+  .brandLeft {
+    min-width: 0;
+    gap: 10px;
+  }
+
+  .title {
+    font-size: 14px;
+  }
+
+  .subtitle {
+    font-size: 12px;
+  }
+
+  .actions {
+    min-width: 0;
+    gap: 8px;
+  }
+
+  .btn {
+    padding: 10px 12px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  /* Hero becomes single column */
+  .heroGrid {
+    grid-template-columns: 1fr !important;
+    gap: 14px;
+  }
+
+  .hero h1 {
+    font-size: 26px;
+    line-height: 1.15;
+    margin-bottom: 10px;
+  }
+
+  .hero p {
+    font-size: 13px;
+    max-width: 100%;
+  }
+
+  /* Pills wrap instead of overflow */
+  .heroBadges {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .pill {
+    width: auto;
+    justify-content: flex-start;
+  }
+
+  /* Upload card fits screen */
+  .uploadCard,
+  .uploadRow {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  input[type="file"] {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  #demoAnalyseBtn {
+    width: 100%;
+  }
+
+  .small {
+    width: 100%;
+    display: block;
+  }
+}
+
+/* Extra-small phones (Instagram browser etc.) */
+@media (max-width: 420px) {
+  .hero {
+    padding: 16px;
+  }
+
+  .hero h1 {
+    font-size: 22px;
+  }
+
+  .btn {
+    padding: 10px 10px;
+    font-size: 12.5px;
+  }
+
+  .pill {
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+}
 
   </style>
 </head>
