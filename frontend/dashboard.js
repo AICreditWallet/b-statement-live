@@ -460,16 +460,16 @@ function updateSelectionUI() {
 }
 
 (async function boot() {
-  user = await currentUser();
+  const user = await currentUser();
+if (!user) {
+  window.location.href = "./login.html";
+  throw new Error("Not logged in");
+}
 
-  if (!user) {
-    window.location.href = "./login.html";
-    return;
-  }
+if (userLine) userLine.textContent = `${user.name} • ${user.email}`;
+if (settingsName) settingsName.textContent = user.name;
+if (settingsEmail) settingsEmail.textContent = user.email;
 
-  if (userLine) userLine.textContent = `${user.name} • ${user.email}`;
-  if (settingsName) settingsName.textContent = user.name;
-  if (settingsEmail) settingsEmail.textContent = user.email;
 
   // Attach logout listeners AFTER boot
   logoutBtn?.addEventListener("click", doLogout);
