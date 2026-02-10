@@ -52,6 +52,7 @@
       background: #0b1220;
       color: #fff;
     }
+    .btn:disabled { opacity: .6; cursor: not-allowed; }
 
     .muted { color: rgba(0,0,0,.6); font-size: 13px; }
     .help { margin-top: 6px; font-size: 12px; color: rgba(0,0,0,.55); }
@@ -60,7 +61,9 @@
     a { color: rgba(11,18,32,.9); text-decoration: none; }
     a:hover { text-decoration: underline; }
 
-    #msg { margin-top: 10px; font-size: 13px; color: rgba(155,0,0,.9); min-height: 18px; }
+    #msg { margin-top: 10px; font-size: 13px; min-height: 18px; }
+    .error { color: rgba(155,0,0,.9); }
+    .ok { color: rgba(0,110,60,.95); }
   </style>
 </head>
 
@@ -93,8 +96,8 @@
           <div class="help">Minimum 6 characters.</div>
         </div>
 
-        <button class="btn" type="submit">Create account</button>
-        <div id="msg"></div>
+        <button id="createBtn" class="btn" type="submit">Create account</button>
+        <div id="msg" class="error"></div>
 
         <div class="links muted">
           <span>Already have an account? <a href="./login.html">Login</a></span>
@@ -107,25 +110,54 @@
   <script type="module">
     import { createAccount, currentUser } from "./auth.js";
 
-    // Already logged in -> go to dashboard
-    if (currentUser()) window.location.href = "./dashboard.html";
-
     const form = document.getElementById("registerForm");
     const msg = document.getElementById("msg");
+    const createBtn = document.getElementById("createBtn");
+
+    function setMsg(text, kind = "error") {
+      msg.textContent = text || "";
+      msg.className = kind === "ok" ? "ok" : "error";
+    }
+
+    // ✅ FIX: currentUser() is async — must await it
+    const me = await currentUser();
+    if (me) {
+      window.location.href = "./dashboard.html";
+    }
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      msg.textContent = "";
+      setMsg("");
 
       const name = document.getElementById("name").value;
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
 
       try {
+        createBtn.disabled = true;
+        createBtn.textContent = "Creating...";
+
         await createAccount({ name, email, password });
-        window.location.href = "./dashboard.html";
+
+        // ✅ IMPORTANT: verify we now have an authenticated user/session
+        const now = await currentUser();
+
+        if (now) {
+          setMsg("Account created. Redirecting...", "ok");
+          window.location.href = "./dashboard.html";
+          return;
+        }
+
+        // If Supabase email confirmation is enabled, session can be null after signup
+        setMsg("Account created. Please confirm your email, then log in.", "ok");
+        window.location.href = "./login.html";
+
       } catch (err) {
-        msg.textContent = err?.message || "Could not create account.";
+        console.error(err);
+        setMsg(err?.message || "Could not create account.", "error");
+      } finally {
+        createBtn.disabled = false;
+        createBtn.textContent = "Create account";
       }
     });
   </script>
