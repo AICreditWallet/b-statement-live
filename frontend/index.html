@@ -782,6 +782,35 @@ img { max-width: 100%; height: auto; }
   /* Plan price text a bit smaller on mobile */
   .price{ font-size: 38px; }
 }
+/* --- Mobile fix: prevent the blue hero section from overflowing --- */
+html, body { overflow-x: hidden; }
+
+@media (max-width: 520px) {
+  .hero { padding: 16px; border-radius: 16px; }
+  .heroGrid { grid-template-columns: 1fr; }
+
+  .hero h1 {
+    font-size: 26px;
+    line-height: 1.12;
+    word-break: break-word;
+  }
+
+  /* Pills were forcing overflow */
+  .heroBadges { gap: 8px; }
+  .pill {
+    white-space: normal !important;   /* <-- this is the key fix */
+    max-width: 100%;
+    width: 100%;
+  }
+
+  /* Upload card layout on mobile */
+  .uploadRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .uploadRow input[type="file"] { width: 100%; }
+  .uploadRow .btn { width: 100%; }
+}
 
   </style>
 </head>
