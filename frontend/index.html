@@ -150,7 +150,7 @@
       font-size: 12px;
       font-weight: 700;
       white-space: nowrap;
-    }
+    } 
 
     .uploadCard{
       background: rgba(255,255,255,.12);
@@ -158,6 +158,24 @@
       border-radius: 16px;
       padding: 14px;
     }
+    .heroCtaRow{
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.heroCtaNote{
+  font-size: 12px;
+  opacity: .9;
+}
+
+@media (max-width: 520px){
+  .heroCtaRow .btn{ width: 100%; }
+  .heroCtaNote{ width: 100%; }
+}
+
     .uploadRow{
       margin-top:10px;
       display:flex;
@@ -866,6 +884,19 @@ html, body { overflow-x: hidden; }
             </span>
           </div>
         </div>
+        <!-- ADD THIS RIGHT HERE -->
+<div class="heroCtaRow">
+  <a class="btn" href="./register.html">Try free for 7 days</a>
+  <span class="heroCtaNote">No card required</span>
+</div>
+
+<div style="margin-top:10px; opacity:.9; font-size:12px;">
+  By continuing you agree to our
+  <a href="./privacy.html" style="color:#fff; text-decoration:underline;">Privacy</a>
+  and
+  <a href="./terms.html" style="color:#fff; text-decoration:underline;">Terms</a>.
+</div>
+
 
         <div class="uploadCard">
           <div style="font-weight:900; font-size:14px; margin-bottom:6px;">Try a sample upload</div>
