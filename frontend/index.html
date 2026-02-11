@@ -22,7 +22,10 @@
     }
 
     *{ box-sizing:border-box; }
-    body{ background:var(--bg); color:var(--text); margin:0; }
+    html, body { width:100%; overflow-x:hidden; }
+    body{ margin:0; background:var(--bg); color:var(--text); }
+
+    img { max-width:100%; height:auto; }
 
     .wrap { max-width: 1120px; margin: 0 auto; padding: 22px 18px 70px; }
 
@@ -41,8 +44,8 @@
     }
     .brandLeft{ display:flex; align-items:center; gap:12px; min-width: 260px; }
     .logo{ width:34px; height:34px; border-radius:10px; }
-    .brandText{ display:flex; flex-direction:column; }
-    .title{ font-weight:800; font-size:16px; letter-spacing:-0.01em; }
+    .brandText{ display:flex; flex-direction:column; min-width:0; }
+    .title{ font-weight:900; font-size:16px; letter-spacing:-0.01em; }
     .subtitle{ font-size:12px; color:rgba(0,0,0,.6); margin-top:2px; }
 
     .nav{
@@ -51,6 +54,7 @@
       align-items:center;
       justify-content:center;
       flex: 1;
+      min-width:0;
     }
     .nav a{
       text-decoration:none;
@@ -59,15 +63,23 @@
       font-size:13px;
       padding: 8px 10px;
       border-radius: 999px;
+      white-space: nowrap;
     }
     .nav a:hover{ background: rgba(73,120,255,.08); color: rgba(17,24,39,.9); }
 
-    .actions{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end; min-width: 260px; }
+    .actions{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+      min-width: 260px;
+    }
     .btn {
       border:0;
       border-radius:999px;
       padding:10px 12px;
-      font-weight:700;
+      font-weight:800;
       cursor:pointer;
       font-size:13px;
       line-height:1;
@@ -97,7 +109,7 @@
       border:1px solid rgba(0,0,0,.06);
     }
 
-    /* HERO (clean + responsive) */
+    /* HERO */
     .hero{
       margin-top:18px;
       padding:22px;
@@ -112,9 +124,9 @@
     .hero::after{
       content:"";
       position:absolute;
-      inset:-70px -90px auto auto;
-      width: 280px;
-      height: 280px;
+      inset:-60px -80px auto auto;
+      width: 260px;
+      height: 260px;
       background: rgba(255,255,255,.10);
       border-radius: 999px;
       transform: rotate(15deg);
@@ -122,30 +134,24 @@
 
     .heroGrid{
       display:grid;
-      grid-template-columns: 1.1fr .9fr;
-      gap:18px;
-      align-items:start;
+      grid-template-columns: 1.15fr .85fr;
+      gap:16px;
+      align-items: start;
       position: relative;
       z-index: 1;
+      min-width:0;
     }
 
     .heroLeft{
-      min-width: 0;
+      min-width:0;
     }
 
     .hero h1{
       margin:0 0 10px;
-      font-size: clamp(24px, 3.2vw, 40px);
+      font-size: clamp(26px, 3.6vw, 42px);
       letter-spacing:-0.03em;
-      line-height: 1.08;
-    }
-
-    .heroLead{
-      margin:0;
-      opacity:.95;
-      font-size: 14px;
-      line-height:1.4;
-      max-width: 56ch;
+      line-height: 1.05;
+      word-break: break-word;
     }
 
     .heroBadges{
@@ -153,8 +159,10 @@
       flex-wrap:wrap;
       gap:10px;
       margin-top: 14px;
+      min-width:0;
     }
 
+    /* KEY FIX: allow wrap on mobile so it never overflows */
     .pill{
       display:inline-flex;
       align-items:center;
@@ -164,46 +172,39 @@
       background: rgba(255,255,255,.14);
       border: 1px solid rgba(255,255,255,.22);
       font-size: 12px;
-      font-weight: 650;
-      white-space: nowrap;
+      font-weight: 700;
+      white-space: normal;          /* <-- important */
       max-width: 100%;
     }
 
-    /* CTA row under pills */
-    .heroCtas{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      flex-wrap:wrap;
+    .heroCtaRow{
       margin-top: 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
     }
-    .heroNote{
-      font-size:12px;
-      opacity:.9;
+    .heroCtaNote{
+      font-size: 12px;
+      opacity: .9;
     }
 
-    /* Upload card */
+    .heroTerms{
+      margin-top:10px;
+      opacity:.9;
+      font-size:12px;
+    }
+    .heroTerms a{ color:#fff; text-decoration:underline; }
+
+    /* Upload Card */
     .uploadCard{
       background: rgba(255,255,255,.12);
       border: 1px solid rgba(255,255,255,.22);
       border-radius: 16px;
       padding: 14px;
+      min-width:0;
       max-width: 100%;
     }
-
-    .uploadTitle{
-      font-weight:750;
-      font-size:14px;
-      margin:0 0 6px;
-    }
-
-    .uploadDesc{
-      margin:0;
-      opacity:.92;
-      font-size:13px;
-      line-height:1.35;
-    }
-
     .uploadRow{
       margin-top:10px;
       display:flex;
@@ -214,29 +215,23 @@
       border: 1px solid rgba(255,255,255,.22);
       border-radius: 14px;
       padding: 12px;
+      min-width:0;
     }
-
-    /* key: prevent overflow on mobile */
     input[type="file"]{
-      width: 100%;
-      max-width: 100%;
       background: rgba(255,255,255,.92);
       border-radius: 10px;
       padding: 8px;
       border: 0;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
     }
-
-    .uploadRow .btn{
-      min-width: 120px;
-      flex: 0 0 auto;
-    }
-
     .small{ font-size:12px; opacity:.92; }
     #status{ margin-top:10px; font-size:13px; opacity:.95; min-height:18px; }
 
     /* Section titles */
     .sectionTitle{
-      font-weight:800;
+      font-weight:900;
       font-size: 18px;
       letter-spacing: -0.02em;
       margin: 0;
@@ -247,12 +242,72 @@
       font-size: 13px;
     }
 
-    /* Preview */
-    .previewGrid{
+    /* How it works diagram */
+    .howWrap{
       display:grid;
       grid-template-columns: 1fr;
       gap: 14px;
       margin-top: 14px;
+    }
+    .steps{
+      display:grid;
+      grid-template-columns: 1fr 60px 1fr 60px 1fr;
+      gap: 10px;
+      align-items: stretch;
+    }
+    @media (max-width: 980px){
+      .steps{ grid-template-columns: 1fr; }
+      .arrow{ display:none; }
+    }
+
+    .stepCard{
+      border: 1px solid rgba(0,0,0,.08);
+      border-radius: 16px;
+      padding: 14px;
+      background: #fff;
+      box-shadow: 0 12px 30px rgba(0,0,0,.05);
+      display:flex;
+      gap: 12px;
+      align-items:flex-start;
+    }
+    .icon{
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: rgba(73,120,255,.12);
+      border: 1px solid rgba(73,120,255,.20);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex: none;
+    }
+    .stepTitle{
+      font-weight: 900;
+      margin: 0 0 4px;
+      font-size: 14px;
+    }
+    .stepText{
+      margin: 0;
+      color: rgba(17,24,39,.62);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    .arrow{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color: rgba(17,24,39,.35);
+    }
+
+    /* Preview */
+    .previewGrid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 14px;
+    }
+    @media (max-width: 980px){
+      .previewGrid{ grid-template-columns: 1fr; }
     }
     .shot{
       border: 1px solid rgba(0,0,0,.08);
@@ -269,12 +324,12 @@
     .shotCap{
       padding: 12px 12px 13px;
       color: rgba(17,24,39,.75);
-      font-weight: 650;
+      font-weight: 700;
       font-size: 13px;
       border-top: 1px solid rgba(0,0,0,.06);
     }
 
-    /* Pricing (unchanged) */
+    /* Pricing */
     .pricingTop{
       display:flex;
       align-items:flex-end;
@@ -295,7 +350,7 @@
       border:0;
       border-radius: 999px;
       padding: 8px 12px;
-      font-weight: 800;
+      font-weight: 900;
       font-size: 13px;
       cursor:pointer;
       background: transparent;
@@ -307,12 +362,17 @@
       box-shadow: 0 10px 22px rgba(0,0,0,.08);
       border: 1px solid rgba(0,0,0,.08);
     }
+
     .pricingGrid{
       display:grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 14px;
       margin-top: 14px;
     }
+    @media (max-width: 980px){
+      .pricingGrid{ grid-template-columns: 1fr; }
+    }
+
     .plan{
       border: 1px solid rgba(0,0,0,.08);
       border-radius: 18px;
@@ -328,16 +388,35 @@
       border-color: rgba(73,120,255,.40);
       box-shadow: 0 18px 46px rgba(73,120,255,.10);
     }
-    .planName{ font-weight: 850; font-size: 18px; letter-spacing:-0.02em; margin:0; }
-    .priceLine{ display:flex; align-items:flex-end; gap: 8px; margin-top: 4px; }
-    .price{ font-weight: 900; font-size: 44px; letter-spacing:-0.03em; line-height: 1; margin:0; }
-    .per{ font-weight: 750; color: rgba(17,24,39,.65); margin-bottom: 6px; }
-    .meta{ color: rgba(17,24,39,.62); font-size: 13px; margin: 0; }
+    .planName{ font-weight: 950; font-size: 18px; letter-spacing:-0.02em; margin:0; }
+    .priceLine{
+      display:flex;
+      align-items:flex-end;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .price{
+      font-weight: 950;
+      font-size: 44px;
+      letter-spacing:-0.03em;
+      line-height: 1;
+      margin:0;
+    }
+    .per{
+      font-weight: 900;
+      color: rgba(17,24,39,.65);
+      margin-bottom: 6px;
+    }
+    .meta{
+      color: rgba(17,24,39,.62);
+      font-size: 13px;
+      margin: 0;
+    }
     .saveTag{
       display:inline-flex;
       align-items:center;
       gap: 6px;
-      font-weight: 800;
+      font-weight: 900;
       font-size: 12px;
       padding: 6px 10px;
       border-radius: 999px;
@@ -353,8 +432,14 @@
       font-size: 14px;
       line-height: 1.55;
     }
-    .planCta{ margin-top: auto; display:flex; gap: 10px; flex-wrap:wrap; }
+    .planCta{
+      margin-top: auto;
+      display:flex;
+      gap: 10px;
+      flex-wrap:wrap;
+    }
 
+    /* Footer */
     .footer{
       margin-top: 16px;
       text-align:center;
@@ -364,21 +449,73 @@
     .footer a{ color: rgba(17,24,39,.55); text-decoration:none; margin: 0 8px; }
     .footer a:hover{ text-decoration:underline; }
 
-    /* RESPONSIVE */
+    /* -----------------------
+       RESPONSIVE (clean, single block)
+       ----------------------- */
     @media (max-width: 980px){
       .nav{ display:none; }
       .heroGrid{ grid-template-columns: 1fr; }
       .brandLeft, .actions{ min-width: auto; }
     }
 
-    @media (max-width: 520px){
-      .topBar{ align-items:flex-start; }
-      .actions{ width: 100%; justify-content:flex-end; }
-      .hero{ padding:16px; }
-      .pill{ width: 100%; justify-content:flex-start; }
-      .heroCtas .btn{ width: 100%; }
-      .uploadRow{ padding:10px; }
-      .uploadRow .btn{ width: 100%; }
+    @media (max-width: 560px){
+      .wrap{ padding: 14px 12px 50px; }
+
+      .topBar{
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 12px 12px;
+      }
+
+      .actions{
+        width: 100%;
+        min-width: 0;
+        justify-content:flex-end;
+        gap: 8px;
+      }
+
+      .hero{
+        padding: 16px;
+        border-radius: 16px;
+      }
+
+      .hero::after{ display:none; }
+
+      .hero h1{
+        font-size: 26px;
+        line-height: 1.12;
+      }
+
+      /* Pills: stack + never overflow */
+      .pill{
+        width: 100%;
+        justify-content:flex-start;
+        font-size: 12px;
+        padding: 8px 10px;
+      }
+
+      /* CTA button full width on phone */
+      .heroCtaRow .btn{ width: 100%; }
+      .heroCtaNote{ width: 100%; }
+
+      /* Upload card: stack controls */
+      .uploadCard{ padding: 12px; border-radius: 14px; }
+      .uploadRow{
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        padding: 10px;
+      }
+      #demoAnalyseBtn{ width: 100%; }
+      .small{ text-align:center; width:100%; }
+
+      /* Preview and pricing already stack via existing media queries */
+      .price{ font-size: 38px; }
+    }
+
+    @media (max-width: 380px){
+      .btn{ padding: 9px 10px; font-size: 12px; }
+      .hero h1{ font-size: 23px; }
     }
   </style>
 </head>
@@ -400,8 +537,8 @@
     </nav>
 
     <div class="actions">
-      <a class="btn secondary" href="./login.html" id="navLogin">Login</a>
-      <a class="btn" href="./register.html" id="navRegister">Create account</a>
+      <a id="navLogin" class="btn secondary" href="./login.html">Login</a>
+      <a id="navRegister" class="btn" href="./register.html">Create account</a>
     </div>
   </header>
 
@@ -409,27 +546,23 @@
     <!-- HERO -->
     <section class="hero">
       <div class="heroGrid">
+        <!-- LEFT -->
         <div class="heroLeft">
           <h1>Know what you’re spending — and who’s raising prices.</h1>
-
-          <p class="heroLead">
-            Tired of invoices and supplier bills? Upload them and we’ll highlight where money is leaking —
-            in seconds.
-          </p>
 
           <div class="heroBadges">
             <span class="pill">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M20 6L9 17l-5-5" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
-              Stop tracking costs manually
+              Stop tracking your cost manually.
             </span>
 
             <span class="pill">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M12 2l7 4v6c0 5-3 9-7 10C8 21 5 17 5 12V6l7-4z" stroke="white" stroke-width="2.2" stroke-linejoin="round"/>
               </svg>
-              See price hikes & leaks
+              Upload your invoices and we’ll show you where money is leaking
             </span>
 
             <span class="pill">
@@ -440,31 +573,31 @@
             </span>
           </div>
 
-          <div class="heroCtas">
+          <div class="heroCtaRow">
             <a class="btn" href="./register.html">Try free for 7 days</a>
-            <span class="heroNote">No card required</span>
+            <span class="heroCtaNote">No card required</span>
           </div>
 
-          <div style="margin-top:12px; opacity:.9; font-size:12px;">
+          <div class="heroTerms">
             By continuing you agree to our
-            <a href="./privacy.html" style="color:#fff; text-decoration:underline;">Privacy</a>
+            <a href="./privacy.html">Privacy</a>
             and
-            <a href="./terms.html" style="color:#fff; text-decoration:underline;">Terms</a>.
+            <a href="./terms.html">Terms</a>.
           </div>
         </div>
 
+        <!-- RIGHT -->
         <div class="uploadCard">
-          <p class="uploadTitle">Try a sample upload</p>
-          <p class="uploadDesc">
-            Choose a file to enable the button. When you click Analyse, we’ll ask you to log in to view the dashboard.
-          </p>
+          <div style="font-weight:900; font-size:14px; margin-bottom:6px;">Try a sample upload</div>
+          <div style="opacity:.92; font-size:13px; line-height:1.35;">
+            Upload your bills or invoices from suppliers!
+          </div>
 
           <div class="uploadRow">
             <input id="demoFile" type="file" accept="application/pdf,image/*" />
             <button id="demoAnalyseBtn" class="btn" disabled>Analyse</button>
             <span class="small" id="demoHint">Choose a file</span>
           </div>
-
           <div id="status"></div>
 
           <div style="margin-top:10px; opacity:.9; font-size:12px;">
@@ -479,13 +612,13 @@
 
     <!-- PREVIEW -->
     <section id="preview" class="card" style="scroll-margin-top:90px;">
-      <h2 class="sectionTitle">Preview</h2>
+      <h2 class="sectionTitle">Demo</h2>
       <p class="sectionSub">This is what you’ll see inside the dashboard after login.</p>
 
-      <div class="previewGrid">
+      <div class="previewGrid" style="grid-template-columns: 1fr;">
         <div class="shot">
           <img src="./assets/demo.png" alt="Dashboard preview" loading="lazy" />
-          <div class="shotCap">Dashboard preview (KPIs, charts, and insights)</div>
+          <div class="shotCap">Dashboard preview (KPIs + charts)</div>
         </div>
       </div>
 
@@ -494,13 +627,65 @@
       </div>
     </section>
 
-    <!-- HOW IT WORKS -->
+    <!-- HOW IT WORKS (visual) -->
     <section id="how" class="card" style="scroll-margin-top:90px;">
       <h2 class="sectionTitle">How it works</h2>
       <p class="sectionSub">Three steps. Clear outputs. Designed for busy owners.</p>
 
-      <!-- keep your existing How it works content below (unchanged) -->
-      <!-- (If you already have your diagram/cards here, leave it as-is.) -->
+      <div class="howWrap">
+        <div class="steps">
+          <div class="stepCard">
+            <div class="icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M12 16V4m0 0l-4 4m4-4l4 4" stroke="#3b5bff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M4 20h16" stroke="#3b5bff" stroke-width="2.2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div>
+              <p class="stepTitle">1) Upload invoices / receipts</p>
+              <p class="stepText">Add PDFs or photos. Each business keeps its own private upload history.</p>
+            </div>
+          </div>
+
+          <div class="arrow" aria-hidden="true">
+            <svg width="42" height="42" viewBox="0 0 24 24" fill="none">
+              <path d="M5 12h14m0 0l-5-5m5 5l-5 5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+
+          <div class="stepCard">
+            <div class="icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M4 7V6a2 2 0 0 1 2-2h1M20 7V6a2 2 0 0 0-2-2h-1M4 17v1a2 2 0 0 0 2 2h1M20 17v1a2 2 0 0 1-2 2h-1" stroke="#3b5bff" stroke-width="2.2" stroke-linecap="round"/>
+                <path d="M8 12h8" stroke="#3b5bff" stroke-width="2.2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div>
+              <p class="stepTitle">2) Extract key fields</p>
+              <p class="stepText">We pull totals & supplier names now (SKUs/line-items can come next).</p>
+            </div>
+          </div>
+
+          <div class="arrow" aria-hidden="true">
+            <svg width="42" height="42" viewBox="0 0 24 24" fill="none">
+              <path d="M5 12h14m0 0l-5-5m5 5l-5 5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+
+          <div class="stepCard">
+            <div class="icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M4 4h16v16H4V4z" stroke="#3b5bff" stroke-width="2.2" />
+                <path d="M8 16V10m4 6V7m4 9v-4" stroke="#3b5bff" stroke-width="2.2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div>
+              <p class="stepTitle">3) Dashboard shows insights</p>
+              <p class="stepText">Spend trends, supplier leaderboard, and alerts when prices move.</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- PRICING -->
@@ -515,8 +700,76 @@
         </div>
       </div>
 
-      <!-- keep your existing pricing cards/Stripe links here (unchanged) -->
-      <!-- (If your pricingGrid is already in your file, keep it as-is.) -->
+      <div class="pricingGrid">
+        <div class="plan" data-plan="starter" data-monthly="9" data-yearly="86">
+          <h3 class="planName">Starter</h3>
+
+          <div class="priceLine">
+            <p class="price" id="price-starter">£9</p>
+            <div class="per" id="per-starter">/mo</div>
+          </div>
+
+          <div class="saveTag" id="save-starter" style="display:none;">Save 20% yearly</div>
+
+          <p class="meta" id="meta-starter">For solo operators</p>
+          <ul class="features">
+            <li>Monthly spend + supplier leaderboard</li>
+            <li>Basic trend charts</li>
+            <li>Up to 100 uploads / month</li>
+          </ul>
+
+          <div class="planCta">
+            <a class="btn" href="./register.html">Start Starter</a>
+            <a class="btn secondary" href="./login.html">Login</a>
+          </div>
+        </div>
+
+        <div class="plan featured" data-plan="growth" data-monthly="29" data-yearly="278">
+          <h3 class="planName">Growth</h3>
+
+          <div class="priceLine">
+            <p class="price" id="price-growth">£29</p>
+            <div class="per" id="per-growth">/mo</div>
+          </div>
+
+          <div class="saveTag" id="save-growth" style="display:none;">Save 20% yearly</div>
+
+          <p class="meta" id="meta-growth">For growing teams</p>
+          <ul class="features">
+            <li>Everything in Starter</li>
+            <li>Price change alerts</li>
+            <li>Up to 500 uploads / month</li>
+          </ul>
+
+          <div class="planCta">
+            <a class="btn" href="./register.html">Start Growth</a>
+            <a class="btn secondary" href="./login.html">Login</a>
+          </div>
+        </div>
+
+        <div class="plan" data-plan="pro" data-monthly="79" data-yearly="758">
+          <h3 class="planName">Pro</h3>
+
+          <div class="priceLine">
+            <p class="price" id="price-pro">£79</p>
+            <div class="per" id="per-pro">/mo</div>
+          </div>
+
+          <div class="saveTag" id="save-pro" style="display:none;">Save 20% yearly</div>
+
+          <p class="meta" id="meta-pro">For multi-location ops</p>
+          <ul class="features">
+            <li>Everything in Growth</li>
+            <li>Multi-user access</li>
+            <li>Priority support</li>
+          </ul>
+
+          <div class="planCta">
+            <a class="btn" href="./register.html">Start Pro</a>
+            <a class="btn secondary" href="./login.html">Login</a>
+          </div>
+        </div>
+      </div>
     </section>
 
     <div class="footer">
@@ -529,6 +782,14 @@
   </main>
 
   <script>
+    // ✅ Safety: force navbar links to correct pages (prevents accidental dashboard redirect)
+    (function fixNavLinks(){
+      const login = document.getElementById("navLogin");
+      const reg = document.getElementById("navRegister");
+      if (login) login.setAttribute("href", "./login.html");
+      if (reg) reg.setAttribute("href", "./register.html");
+    })();
+
     // ---- Demo upload behaviour ----
     const demoFile = document.getElementById("demoFile");
     const demoAnalyseBtn = document.getElementById("demoAnalyseBtn");
@@ -581,15 +842,29 @@
       });
 
       const isYearly = mode === "yearly";
-      btnMonthly?.classList.toggle("active", !isYearly);
-      btnYearly?.classList.toggle("active", isYearly);
-      btnMonthly?.setAttribute("aria-selected", String(!isYearly));
-      btnYearly?.setAttribute("aria-selected", String(isYearly));
+      btnMonthly.classList.toggle("active", !isYearly);
+      btnYearly.classList.toggle("active", isYearly);
+      btnMonthly.setAttribute("aria-selected", String(!isYearly));
+      btnYearly.setAttribute("aria-selected", String(isYearly));
     }
 
     btnMonthly?.addEventListener("click", () => setBilling("monthly"));
     btnYearly?.addEventListener("click", () => setBilling("yearly"));
     setBilling("monthly");
+  </script>
+
+  <script>
+    // Extra safety: prevent any weird handler from hijacking nav
+    document.getElementById("navLogin")?.addEventListener("click", (e) => {
+      // allow normal navigation but keep it explicit
+      e.preventDefault();
+      window.location.href = "./login.html";
+    });
+
+    document.getElementById("navRegister")?.addEventListener("click", (e) => {
+      e.preventDefault();
+      window.location.href = "./register.html";
+    });
   </script>
 </body>
 </html>
